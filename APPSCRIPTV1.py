@@ -17,7 +17,7 @@ def get_base64_image(image_path):
 LOGO_PATH = "AIS Logo.png"
 logo_b64 = get_base64_image(LOGO_PATH)
 
-# --- FIXED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -30,7 +30,7 @@ HTML_TEMPLATE = """
     }}
     body {{
         font-family: Helvetica, Arial, sans-serif;
-        color: #1e293b;
+        color: #414042;
         line-height: 1.5;
         font-size: 10pt;
     }}
@@ -48,10 +48,9 @@ HTML_TEMPLATE = """
     }}
     .pdf-app-title {{
         text-align: right;
-        color: #1e3a8a;
+        color: #E31E24;
         font-size: 16pt;
         font-weight: bold;
-        font-family: Helvetica, Arial, sans-serif;
     }}
     .meta-table {{
         width: 100%;
@@ -61,29 +60,27 @@ HTML_TEMPLATE = """
     .meta-table td {{
         padding: 10px 12px;
         font-size: 9.5pt;
-        background-color: #f8fafc;
-        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        border: 1px solid #939598;
     }}
     .meta-label {{
-        color: #475569;
+        color: #414042;
+        background-color: #f2f2f2;
         font-weight: bold;
         text-transform: uppercase;
         font-size: 8pt;
         letter-spacing: 0.5px;
         width: 18%;
     }}
-    .meta-value {{
-        color: #0f172a;
-    }}
     .section-container {{
         margin-top: 18px;
         margin-bottom: 5px;
     }}
     .section-title {{
-        color: #1e3a8a;
+        color: #E31E24;
         font-size: 11pt;
         font-weight: bold;
-        border-bottom: 1.5px solid #3b82f6;
+        border-bottom: 2px solid #E31E24;
         padding-bottom: 3px;
         margin-bottom: 8px;
         text-transform: uppercase;
@@ -91,7 +88,7 @@ HTML_TEMPLATE = """
     }}
     .content-block {{
         margin-bottom: 10px;
-        color: #334155;
+        color: #414042;
         font-size: 10pt;
         padding-left: 2px;
     }}
@@ -105,7 +102,7 @@ HTML_TEMPLATE = """
         border-collapse: collapse;
     }}
     table.matrix-table th {{
-        background-color: #1e3a8a;
+        background-color: #414042;
         color: #ffffff;
         font-weight: bold;
         text-align: left;
@@ -113,21 +110,21 @@ HTML_TEMPLATE = """
         font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border: 1px solid #1e3a8a;
+        border: 1px solid #414042;
     }}
     table.matrix-table td {{
-        border: 1px solid #cbd5e1;
+        border: 1px solid #939598;
         padding: 9px 12px;
         font-size: 9.5pt;
         vertical-align: top;
-        color: #334155;
+        color: #414042;
     }}
     table.matrix-table tr:nth-child(even) td {{
-        background-color: #f8fafc;
+        background-color: #f9f9f9;
     }}
     .table-key {{
         font-weight: bold;
-        color: #0f172a;
+        color: #E31E24;
         width: 30%;
     }}
     .image-grid {{
@@ -143,18 +140,18 @@ HTML_TEMPLATE = """
     .embedded-img {{
         width: 280px;
         height: auto;
-        border: 1px solid #cbd5e1;
+        border: 1px solid #939598;
         margin-bottom: 4px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
-        color: #64748b;
+        color: #939598;
         font-weight: bold;
     }}
     .footer-container {{
         text-align: right;
         font-size: 8pt;
-        color: #94a3b8;
+        color: #939598;
         margin-top: 20px;
     }}
 </style>
@@ -162,12 +159,8 @@ HTML_TEMPLATE = """
 <body>
     <table class="header-layout">
         <tr>
-            <td>
-                {html_logo_tag}
-            </td>
-            <td class="pdf-app-title">
-                PQI Work Instruction Document
-            </td>
+            <td>{html_logo_tag}</td>
+            <td class="pdf-app-title">PQI Work Instruction</td>
         </tr>
     </table>
 
@@ -193,7 +186,7 @@ HTML_TEMPLATE = """
     {dynamic_content}
 
     <div class="footer-container">
-        Page <pdf:pagenumber />
+        AIS Quality Assurance | Page <pdf:pagenumber />
     </div>
 </body>
 </html>
@@ -211,171 +204,133 @@ def format_text_block(text_value):
 
 def generate_pdf_content(fields, images_list):
     html_output = []
-    table_based_categories = [
-        "5. Procedure: VCMM/CMM Inspection", 
-        "7. Procedure: Data Reporting"
-    ]
+    table_based_categories = ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]
     
     for header, value in fields.items():
         val_clean = value.strip()
         
         if header == "8. Visuals / Screenshots":
-            if not val_clean and not images_list:
-                continue
-                
-            html_output.append('<div class="section-container">')
-            html_output.append('<div class="section-title">Visuals / Screenshots</div>')
-            
-            if val_clean:
-                html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
-            
+            if not val_clean and not images_list: continue
+            html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
+            if val_clean: html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
             if images_list:
                 html_output.append('<table class="image-grid">')
                 for i in range(0, len(images_list), 2):
                     html_output.append('<tr>')
-                    img1 = images_list[i]
-                    img1.seek(0)
-                    b64_1 = base64.b64encode(img1.read()).decode()
-                    html_output.append(f'<td><img class="embedded-img" src="data:{img1.type};base64,{b64_1}"><div class="image-grid-caption">Figure {i+1}: {img1.name}</div></td>')
-                    
-                    if i + 1 < len(images_list):
-                        img2 = images_list[i+1]
-                        img2.seek(0)
-                        b64_2 = base64.b64encode(img2.read()).decode()
-                        html_output.append(f'<td><img class="embedded-img" src="data:{img2.type};base64,{b64_2}"><div class="image-grid-caption">Figure {i+2}: {img2.name}</div></td>')
-                    else:
-                        html_output.append('<td></td>')
+                    for j in range(2):
+                        if i + j < len(images_list):
+                            img = images_list[i+j]
+                            img.seek(0)
+                            b64 = base64.b64encode(img.read()).decode()
+                            html_output.append(f'<td><img class="embedded-img" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">Figure {i+j+1}: {img.name}</div></td>')
+                        else: html_output.append('<td></td>')
                     html_output.append('</tr>')
                 html_output.append('</table>')
             html_output.append('</div>')
             continue
 
-        if not val_clean:
-            continue
-            
+        if not val_clean: continue
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
-        html_output.append('<div class="section-container">')
-        html_output.append(f'<div class="section-title">{clean_title}</div>')
+        html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
         
         if header in table_based_categories:
-            html_output.append('<table class="matrix-table">')
-            html_output.append('<tr><th>Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
-            
+            html_output.append('<table class="matrix-table"><tr><th>Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
             for block in val_clean.split('\n'):
-                if not block.strip():
-                    continue
+                if not block.strip(): continue
                 if ":" in block:
                     parts = block.split(":", 1)
-                    key = parts[0].strip()
-                    val = parts[1].strip()
-                else:
-                    key = "Action Step"
-                    val = block.strip()
-                
+                    key, val = parts[0].strip(), parts[1].strip()
+                else: key, val = "Action Step", block.strip()
                 key = re.sub(r'^[\-\*]\s*', '', key)
                 html_output.append(f'<tr><td class="table-key">{key}</td><td>{val if val else " "}</td></tr>')
             html_output.append('</table>')
         else:
             html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
-            
         html_output.append('</div>')
-            
     return "".join(html_output)
 
-# --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
-st.set_page_config(page_title="PQI Work Instruction Generator", layout="centered")
+# --- STREAMLIT UI DESIGN ---
+st.set_page_config(page_title="AIS | PQI Work Instruction Generator", layout="centered")
 
-# RENDER APP INTERFACE HEADER IMAGE ACCORDINGLY
+# Injection of AIS Red and Grey Brand Colors into the App UI
+st.markdown(f"""
+    <style>
+        .stApp {{ background-color: #ffffff; }}
+        h1 {{ color: #E31E24 !important; font-weight: 800 !important; }}
+        h4, h5 {{ color: #414042 !important; font-weight: 700 !important; }}
+        .stButton>button {{
+            background-color: #E31E24 !important;
+            color: white !important;
+            border-radius: 5px !important;
+            border: none !important;
+            font-weight: bold !important;
+        }}
+        .stButton>button:hover {{ background-color: #414042 !important; color: white !important; }}
+        .stDivider {{ border-bottom-color: #939598 !important; }}
+        div[data-baseweb="textarea"] textarea {{ border: 1px solid #939598 !important; }}
+    </style>
+""", unsafe_allow_html=True)
+
+# Logo and Header
 if logo_b64:
-    st.image(os.path.join(os.getcwd(), LOGO_PATH), width=240)
-
+    st.image(LOGO_PATH, width=280)
 st.title("PQI Work Instruction Generator")
-st.text("Advanced Inspection Services | Controlled Production Requirements")
+st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
-st.markdown("#### 📓 Global Metadata Properties")
-input_doc_title = st.text_input("Document Title:", placeholder="e.g., WI_010_Sandia-3A1488Headers_Rev1.0")
-
-meta_col_left, meta_col_mid, meta_col_right = st.columns(3)
-with meta_col_left:
-    input_template_num = st.text_input("Template Number:", placeholder="e.g., TMP_002 Rev. 1.1")
-with meta_col_mid:
-    input_date = st.date_input("Tracking Date:", date.today())
-with meta_col_right:
-    input_author = st.text_input("Author:", placeholder="Enter your full name or initials...")
-
-input_purpose = st.text_area(
-    "Purpose Scope Description:",
-    placeholder="Describe the operational purpose and scope execution rules of this document...",
-    height=90
-)
+# Metadata Section
+st.markdown("#### 📓 Document Metadata")
+input_doc_title = st.text_input("Document Title:", placeholder="e.g., Sandia-3A1488-01")
+col_l, col_m, col_r = st.columns(3)
+with col_l: input_template_num = st.text_input("Template #:", placeholder="e.g., TMP-002")
+with col_m: input_date = st.date_input("Date:", date.today())
+with col_r: input_author = st.text_input("Author:", placeholder="Initials/Name")
+input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the document scope...", height=70)
 
 st.divider()
 
-st.markdown("#### 📋 Instruction Framework Categories")
-st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
-
-input_fields = {}
-input_fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=70)
-input_fields["2. Purpose"] = st.text_area("2. Purpose:", height=90)
-input_fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. All Users:\nb. Quality Manager / Project Manager:", height=100)
-input_fields["4. Required Tools / Software / Materials"] = st.text_area("4. Required Tools / Software / Materials:", height=100)
-input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM Inspection (Use 'Key: Value' layout for clean metric matrix printing):", value="Work Ticket Number:\nPart Number:\nSerial Number:", height=120)
-input_fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=110)
-input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="Controls Tab:\nCustomer:\nPart data:\nAdditional Data:\nPrimary Inspector:\nNotes:\nCert_Uncert:\nComments Pg:\nEquip List:\nReport-V:\nReport Pictures:", height=260)
+# Instructions Sections
+st.markdown("#### 📋 Framework Categories")
+fields = {}
+fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
+fields["2. Purpose"] = st.text_area("2. Purpose:", height=65)
+fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
+fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
+fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Key: Value):", value="Ticket #:\nPart #:\nSerial #:", height=100)
+fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
+fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Key: Value):", value="Controls Tab:\nCustomer:\nNotes:", height=180)
 
 st.markdown("---")
-st.markdown("##### 🖼️ Section 8 Configuration Hub")
-input_fields["8. Visuals / Screenshots"] = st.text_area("8. Visuals / Screenshots Narrative Notes (Optional):", height=80)
-uploaded_images = st.file_uploader(
-    "Upload reference figures specifically for Section 8 (JPG/PNG):", 
-    accept_multiple_files=True, 
-    type=["jpg", "png", "jpeg"]
-)
+st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
+fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 8:", height=70)
+uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 st.markdown("---")
 
-input_fields["9. Safety / Precautions"] = st.text_area("9. Safety / Precautions:", height=100)
-input_fields["10. Troubleshooting / Notes"] = st.text_area("10. Troubleshooting / Notes:", height=100)
-input_fields["11. Compliance"] = st.text_area("11. Compliance:", height=100)
+fields["9. Safety / Precautions"] = st.text_area("9. Safety:", height=80)
+fields["10. Troubleshooting"] = st.text_area("10. Notes/Troubleshooting:", height=80)
+fields["11. Compliance"] = st.text_area("11. Compliance:", height=80)
 
 st.divider()
-
-col_spacer, col_btn = st.columns([2, 1])
+_, col_btn = st.columns([2, 1])
 with col_btn:
-    compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
+    compile_button = st.button("🚀 COMPILE TO PDF", use_container_width=True)
 
 if compile_button:
-    if input_doc_title.strip() or any(f.strip() for f in input_fields.values()):
-        author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
-        date_stamp = input_date.strftime("%m/%d/%Y")
+    with st.spinner("Compiling AIS Branded Report..."):
+        dynamic_content = generate_pdf_content(fields, uploaded_images)
+        logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
-        with st.spinner("Compiling..."):
-            dynamic_pdf_content = generate_pdf_content(input_fields, uploaded_images)
-            
-            # Setup logo img HTML component cleanly
-            html_logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
-            
-            final_html = HTML_TEMPLATE.format(
-                html_logo_tag=html_logo_tag,
-                doc_title=input_doc_title if input_doc_title.strip() else " ",
-                template_num=input_template_num if input_template_num.strip() else " ",
-                doc_date=date_stamp,
-                doc_author=author_stamp,
-                purpose=input_purpose if input_purpose.strip() else " ",
-                dynamic_content=dynamic_pdf_content
-            )
-            
-            pdf_buffer = BytesIO()
-            pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
-            
-            if not pisa_status.err:
-                st.success("Compilation complete.")
-                st.download_button(
-                    label="Download Production PDF",
-                    data=pdf_buffer.getvalue(),
-                    file_name="Compiled_Specification.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            else:
-                st.error("Error formatting PDF.")
+        final_html = HTML_TEMPLATE.format(
+            html_logo_tag=logo_tag,
+            doc_title=input_doc_title if input_doc_title.strip() else " ",
+            template_num=input_template_num if input_template_num.strip() else " ",
+            doc_date=input_date.strftime("%m/%d/%Y"),
+            doc_author=input_author.strip() if input_author.strip() else "AIS Team",
+            purpose=input_purpose if input_purpose.strip() else " ",
+            dynamic_content=dynamic_content
+        )
+        
+        pdf_buffer = BytesIO()
+        pisa.CreatePDF(final_html, dest=pdf_buffer)
+        st.success("AIS Branded Report Ready!")
+        st.download_button("📥 DOWNLOAD PDF", data=pdf_buffer.getvalue(), file_name="AIS_Work_Instruction.pdf", mime="application/pdf", use_container_width=True)
