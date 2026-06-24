@@ -5,7 +5,6 @@ from xhtml2pdf import pisa
 from io import BytesIO
 
 # --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
-# (Left intact so your final PDF remains perfectly professional)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -198,15 +197,17 @@ def parse_raw_dump(raw_text):
     in_rev_history = False
     rev_rows = []
     
+    # Updated to capture all your newly structured headers accurately
     known_headers = [
-        "Responsibilities", "Required Tools / Software / Materials", 
-        "Procedure: VCMM Inspection", "Procedure: Visual Inspection", 
-        "Procedure: Data Reporting", "Safety / Precautions", 
-        "Troubleshooting / Notes", "Compliance", "Visuals / Screenshots"
+        "WI Template Number", "Purpose", "Responsibilities", 
+        "Required Tools / Software / Materials", "Procedure: VCMM/CMM Inspection", 
+        "Procedure: Visual Inspection", "Procedure: Data Reporting", 
+        "Visuals / Screenshots", "Safety / Precautions", 
+        "Troubleshooting / Notes", "Compliance", "Revision History"
     ]
     
     for line in clean_lines:
-        if any(x in line.lower() for x in ["purpose", "wi template number", "draft:", "the following table:"]):
+        if any(x in line.lower() for x in ["draft:", "the following table:"]):
             continue
 
         if "revision history" in line.lower() or "rev,date,changes" in line.lower():
@@ -346,60 +347,45 @@ def parse_raw_dump(raw_text):
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
 st.set_page_config(page_title="Document Compiler", layout="centered")
 
-# Native Header
 st.title("Secure Document Compiler")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-DEFAULT_TEMPLATE = """3. Responsibilities:
-a. All Users:
-b. Quality Manager / Project Manager:
+# YOUR EXACT 12 FIELDS PRE-LOADED AND PERFECTLY SPACED OUT ALWAYS
+DEFAULT_TEMPLATE = """1. WI Template Number:
+
+2. Purpose:
+
+3. Responsibilities:
 
 4. Required Tools / Software / Materials:
 
-5. Procedure: VCMM Inspection:
-- Work Ticket Number
-- Part Number
-- Serial Number
+5. Procedure: VCMM/CMM Inspection:
 
 6. Procedure: Visual Inspection:
 
 7. Procedure: Data Reporting:
-- Controls Tab:
-- Customer:
-- Part data:
-- Additional Data:
-- Primary Inspector:
-- Notes:
-- Cert_Uncert:
-- Comments Pg:
-- Equip List:
-- Report-V:
-- Report Pictures:
 
 8. Visuals / Screenshots:
 
 9. Safety / Precautions:
-- ITAR Reminder:
 
 10. Troubleshooting / Notes:
 
 11. Compliance:
 
-Revision History
+12. Revision History:
 Rev,Date,Changes,Author
-1.0,6/5/2025,Initial document.,Alyssa Barstad"""
+1.0,6/24/2026,Initial document.,Alyssa Barstad"""
 
-# Clean input container
 raw_input = st.text_area(
     "Specification Framework Input Data:",
     value=DEFAULT_TEMPLATE,
-    height=350
+    height=480
 )
 
 st.divider()
 
-# Native Multi-column spacing for attachments and actions
 col1, col2, col3 = st.columns([2, 1, 1])
 
 with col1:
@@ -410,11 +396,10 @@ with col1:
     )
 
 with col3:
-    st.write(" ")  # Spacer to line up with file uploader
+    st.write(" ")
     st.write(" ")
     compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
-# Parsing & Engine execution
 if compile_button:
     if raw_input.strip():
         with st.spinner("Compiling..."):
@@ -464,4 +449,3 @@ if compile_button:
                 )
             else:
                 st.error("Error formatting PDF.")
-                st.error("Error formatting PDF document.")
