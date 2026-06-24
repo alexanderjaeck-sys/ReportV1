@@ -367,7 +367,7 @@ st.markdown("""
             background-color: #ffffff !important;
         }
     </style>
-""", unsafe_allow_index=True)
+""", unsafe_allow_html=True)  # <-- Changed from unsafe_allow_index=True
 
 # Main Title Header Block
 st.title("🛡️ Secure Document Compiler")
