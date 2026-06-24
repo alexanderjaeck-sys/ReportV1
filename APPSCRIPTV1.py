@@ -3,6 +3,7 @@ import re
 import base64
 from xhtml2pdf import pisa
 from io import BytesIO
+from datetime import date
 
 # --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
@@ -180,7 +181,7 @@ HTML_TEMPLATE = """
 """
 
 # --- STRING/ARRAY AUTOMATION PARSER ---
-def parse_raw_dump(raw_text):
+def parse_raw_dump(raw_text, user_date, user_author):
     clean_lines = []
     for line in raw_text.split('\n'):
         line_fixed = line.strip()
@@ -194,10 +195,7 @@ def parse_raw_dump(raw_text):
     html_output = []
     current_section = None
     in_table = False
-    in_rev_history = False
-    rev_rows = []
     
-    # Updated to capture all your newly structured headers accurately
     known_headers = [
         "WI Template Number", "Purpose", "Responsibilities", 
         "Required Tools / Software / Materials", "Procedure: VCMM/CMM Inspection", 
@@ -207,32 +205,7 @@ def parse_raw_dump(raw_text):
     ]
     
     for line in clean_lines:
-        if any(x in line.lower() for x in ["draft:", "the following table:"]):
-            continue
-
-        if "revision history" in line.lower() or "rev,date,changes" in line.lower():
-            in_rev_history = True
-            if in_table:
-                html_output.append("</table>")
-                in_table = False
-            if current_section == "sub_ordered":
-                html_output.append("</ol></li>")
-                current_section = "ordered"
-            if current_section == "ordered":
-                html_output.append("</ol>")
-            elif current_section == "unordered":
-                html_output.append("</ul>")
-            current_section = "rev_mode"
-            continue
-            
-        if in_rev_history:
-            parts = line.split(',')
-            if len(parts) >= 4 and parts[0].strip() and parts[1].strip():
-                rev = parts[0].strip()
-                date = parts[1].strip()
-                changes = parts[2].strip()
-                author = parts[3].strip()
-                rev_rows.append(f"<tr><td>{rev}</td><td>{date}</td><td>{changes}</td><td>{author}</td></tr>")
+        if any(x in line.lower() for x in ["draft:", "the following table:", "rev,date,changes,author", "1.0,"]):
             continue
 
         if line.endswith(':') or any(line.startswith(prefix) for prefix in known_headers):
@@ -249,10 +222,19 @@ def parse_raw_dump(raw_text):
                 
             clean_header = line.replace(":", "").strip()
             clean_header = re.sub(r'^\d+\.\s*', '', clean_header)
+            
+            # Skip manual insertion of Revision History inside main parser loop
+            if "revision history" in clean_header.lower():
+                current_section = "skip_mode"
+                continue
+                
             html_output.append(f'<div class="section-title">{clean_header}</div>')
             current_section = "section_started"
             continue
             
+        if current_section == "skip_mode":
+            continue
+
         if "tab:" in line.lower() or "list:" in line.lower() or line.startswith("Report-V") or line.startswith("Notes:") or line.startswith("Cert_Uncert") or line.startswith("Equip List") or line.startswith("Comments Pg") or line.startswith("Customer:") or line.startswith("Part data:") or line.startswith("Additional Data:") or line.startswith("Primary Inspector:") or line.startswith("Report Pictures:"):
             delimiter = ":" if ":" in line else " "
             parts = line.split(delimiter, 1)
@@ -305,7 +287,7 @@ def parse_raw_dump(raw_text):
                 html_output.append('<ol>')
                 current_section = "ordered"
                 
-            clean_li = re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', line)
+            clean_li = re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', clean_li) if 'clean_li' in locals() else re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', line)
             clean_li = re.sub(r'^[\-\*]\s*', '', clean_li)
             html_output.append(f'<li>{clean_li}') 
             
@@ -330,12 +312,12 @@ def parse_raw_dump(raw_text):
     elif current_section == "ordered": html_output.append("</ol>")
     elif current_section == "unordered": html_output.append("</ul>")
     
-    if rev_rows:
-        html_output.append('<div class="section-title">Revision Control History</div>')
-        html_output.append('<table class="matrix-table">')
-        html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
-        html_output.append("".join(rev_rows))
-        html_output.append('</table>')
+    # Dynamically inject the structural table using the exact native box inputs
+    html_output.append('<div class="section-title">Revision Control History</div>')
+    html_output.append('<table class="matrix-table">')
+    html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
+    html_output.append(f'<tr><td>1.0</td><td>{user_date}</td><td>Initial Document Compilation.</td><td>{user_author}</td></tr>')
+    html_output.append('</table>')
     
     return {
         "doc_title": doc_title,
@@ -351,7 +333,7 @@ st.title("Secure Document Compiler")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# YOUR EXACT 12 FIELDS PRE-LOADED AND PERFECTLY SPACED OUT ALWAYS
+# Cleared out the messy comma-string from the raw prompt zone entirely
 DEFAULT_TEMPLATE = """1. WI Template Number:
 
 2. Purpose:
@@ -374,15 +356,25 @@ DEFAULT_TEMPLATE = """1. WI Template Number:
 
 11. Compliance:
 
-12. Revision History:
-Rev,Date,Changes,Author
-1.0,6/24/2026,Initial document.,Alyssa Barstad"""
+12. Revision History:"""
 
 raw_input = st.text_area(
     "Specification Framework Input Data:",
     value=DEFAULT_TEMPLATE,
-    height=480
+    height=420
 )
+
+st.divider()
+
+# NEW SECURE INPUT ROW: Tracking metadata for creator credentials
+st.markdown("#### 📝 Document Attribution Credentials")
+meta_col1, meta_col2 = st.columns(2)
+
+with meta_col1:
+    input_author = st.text_input("Document Editor / Amender Name:", placeholder="Enter full name or initials...")
+
+with meta_col2:
+    input_date = st.date_input("Compilation Tracking Date:", date.today())
 
 st.divider()
 
@@ -402,8 +394,12 @@ with col3:
 
 if compile_button:
     if raw_input.strip():
+        # Fallback if field left completely blank
+        author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
+        date_stamp = input_date.strftime("%m/%d/%Y")
+        
         with st.spinner("Compiling..."):
-            content_data = parse_raw_dump(raw_input)
+            content_data = parse_raw_dump(raw_input, date_stamp, author_stamp)
             
             img_html = []
             if uploaded_images:
