@@ -371,7 +371,7 @@ st.markdown("#### 📝 Document Attribution Credentials")
 meta_col1, meta_col2 = st.columns(2)
 
 with meta_col1:
-    input_author = st.text_input("Document Editor / Amender Name:", placeholder="Enter full name or initials...")
+    input_author = st.text_input("Author:", placeholder="Enter full name or initials...")
 
 with meta_col2:
     input_date = st.date_input("Compilation Tracking Date:", date.today())
