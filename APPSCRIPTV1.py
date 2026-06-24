@@ -5,6 +5,7 @@ from xhtml2pdf import pisa
 from io import BytesIO
 
 # --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# (Left intact so your final PDF remains perfectly professional)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -342,39 +343,14 @@ def parse_raw_dump(raw_text):
         "dynamic_content": "".join(html_output)
     }
 
-# --- EXECUTIVE STREAMLIT UI DESIGN ---
-# Set theme directly via script configuration
-st.set_page_config(page_title="Advanced Inspection Services - Compiler", layout="centered")
+# --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
+st.set_page_config(page_title="Document Compiler", layout="centered")
 
-# Injection of Slate and Off-White Custom Styling Variables
-st.markdown("""
-    <style>
-        .reportview-container {
-            background: #f8fafc;
-        }
-        h1 {
-            color: #1e3a8a !important;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-            font-weight: 700 !important;
-        }
-        p {
-            color: #475569 !important;
-        }
-        div[data-baseweb="textarea"] textarea {
-            font-family: 'Courier New', Courier, monospace !important;
-            font-size: 10pt !important;
-            color: #0f172a !important;
-            background-color: #ffffff !important;
-        }
-    </style>
-""", unsafe_allow_html=True)  # <-- Changed from unsafe_allow_index=True
+# Native Header
+st.title("Secure Document Compiler")
+st.text("Advanced Inspection Services | Controlled Production Requirements")
+st.divider()
 
-# Main Title Header Block
-st.title("🛡️ Secure Document Compiler")
-st.caption("Advanced Inspection Services | Controlled Production Environments")
-st.markdown("---")
-
-# Default template framework setup
 DEFAULT_TEMPLATE = """3. Responsibilities:
 a. All Users:
 b. Quality Manager / Project Manager:
@@ -414,36 +390,34 @@ Revision History
 Rev,Date,Changes,Author
 1.0,6/5/2025,Initial document.,Alyssa Barstad"""
 
-# --- CENTER STAGE WORKSPACE ---
-st.subheader("📋 Production Specifications Framework")
-
-# Clean, Focused Input Placement
+# Clean input container
 raw_input = st.text_area(
-    "Edit template strings and structural tokens below:",
+    "Specification Framework Input Data:",
     value=DEFAULT_TEMPLATE,
-    height=400
+    height=350
 )
 
-# Splitting media attachment and controls into clear side-by-side containers
-col_left, col_right = st.columns(2)
+st.divider()
 
-with col_left:
-    st.markdown("#### 📸 Layout Attachments")
+# Native Multi-column spacing for attachments and actions
+col1, col2, col3 = st.columns([2, 1, 1])
+
+with col1:
     uploaded_images = st.file_uploader(
-        "Upload setup figures or tracking charts (JPG/PNG):", 
+        "Upload reference figures:", 
         accept_multiple_files=True, 
         type=["jpg", "png", "jpeg"]
     )
 
-with col_right:
-    st.markdown("#### ⚡ Processing Controls")
-    st.write("Ensure all compliance codes are updated before deploying compilation pipelines.")
-    compile_button = st.button("🚀 Compile Document Framework to PDF", use_container_width=True)
+with col3:
+    st.write(" ")  # Spacer to line up with file uploader
+    st.write(" ")
+    compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
-# Processing Logic Pipeline Execution
+# Parsing & Engine execution
 if compile_button:
     if raw_input.strip():
-        with st.spinner("Processing structural specification matrix elements..."):
+        with st.spinner("Compiling..."):
             content_data = parse_raw_dump(raw_input)
             
             img_html = []
@@ -480,14 +454,14 @@ if compile_button:
             pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
             
             if not pisa_status.err:
-                st.balloons()
-                st.success("Verification Matrix Compiled Successfully!")
+                st.success("Compilation complete.")
                 st.download_button(
-                    label="📥 Download Polish Production PDF",
+                    label="Download Production PDF",
                     data=pdf_buffer.getvalue(),
                     file_name="Compiled_Specification.pdf",
                     mime="application/pdf",
                     use_container_width=True
                 )
             else:
+                st.error("Error formatting PDF.")
                 st.error("Error formatting PDF document.")
