@@ -274,7 +274,7 @@ st.markdown(f"""
 # Logo and Header
 if logo_b64:
     st.image(LOGO_PATH, width=280)
-st.title("PQI Work Instruction Generator")
+st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
