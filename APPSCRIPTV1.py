@@ -154,20 +154,16 @@ def generate_pdf_content(fields, user_date, user_author, images_list):
     for header, value in fields.items():
         val_clean = value.strip()
         
-        # SPECIAL BEHAVIOR: Handle Visuals/Screenshots mapping slot uniquely
         if header == "8. Visuals / Screenshots":
-            # Only render this category if text exists OR images were explicitly uploaded
             if not val_clean and not images_list:
                 continue
                 
             clean_title = "Visuals / Screenshots"
             html_output.append(f'<div class="section-title">{clean_title}</div>')
             
-            # Print the text if there is any
             if val_clean:
                 html_output.append(f'<div class="content-block">{val_clean}</div>')
             
-            # Process and loop layout attachment tables directly in this section space
             if images_list:
                 html_output.append('<table class="image-grid">')
                 for i in range(0, len(images_list), 2):
@@ -188,7 +184,6 @@ def generate_pdf_content(fields, user_date, user_author, images_list):
                 html_output.append('</table>')
             continue
 
-        # Standard Field Defensive Empty Processing Checks
         if not val_clean:
             continue
             
@@ -209,7 +204,6 @@ def generate_pdf_content(fields, user_date, user_author, images_list):
         else:
             html_output.append(f'<div class="content-block">{val_clean}</div>')
             
-    # Native Tracking History Table Core Element
     html_output.append('<div class="section-title">Revision Control History</div>')
     html_output.append('<table class="matrix-table">')
     html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
@@ -225,25 +219,25 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# Global Document Data Matrix Property Blocks
+# GLOBAL METADATA: Cleared out all initial values so everything boots fresh and completely blank
 st.markdown("#### 📓 Global Metadata Properties")
-input_doc_title = st.text_input("Document Title:", value="WI_010_Sandia-3A1488Headers_Rev1.0")
+input_doc_title = st.text_input("Document Title:", placeholder="e.g., WI_010_Sandia-3A1488Headers_Rev1.0")
 
 meta_col_left, meta_col_right = st.columns(2)
 with meta_col_left:
-    input_template_num = st.text_input("Template Number:", value="TMP_002 Rev. 1.1")
+    input_template_num = st.text_input("Template Number:", placeholder="e.g., TMP_002 Rev. 1.1")
 with meta_col_right:
     input_author = st.text_input("Author:", placeholder="Enter your full name or initials...")
 
 input_purpose = st.text_area(
     "Purpose Scope Description:",
-    value="To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution.",
+    placeholder="Describe the operational purpose and scope execution rules of this document...",
     height=90
 )
 
 st.divider()
 
-# --- STANDALONE FIELDS COMPLIANCE OBJECT MATRIX ---
+# --- WORKSPACE ENTRY MATRIX ---
 st.markdown("#### 📋 Instruction Framework Categories")
 st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
 
@@ -257,7 +251,6 @@ input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: 
 input_fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=110)
 input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="- Controls Tab:\n- Customer:\n- Part data:\n- Additional Data:\n- Primary Inspector:\n- Notes:\n- Cert_Uncert:\n- Comments Pg:\n- Equip List:\n- Report-V:\n- Report Pictures:", height=260)
 
-# Custom Section Container for the explicit Visuals element tracking target box rules
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8 Configuration Hub")
 input_fields["8. Visuals / Screenshots"] = st.text_area("8. Visuals / Screenshots Narrative Notes (Optional):", height=80)
@@ -290,9 +283,9 @@ if compile_button:
         dynamic_pdf_content = generate_pdf_content(input_fields, date_stamp, author_stamp, uploaded_images)
         
         final_html = HTML_TEMPLATE.format(
-            doc_title=input_doc_title,
-            template_num=input_template_num,
-            purpose=input_purpose,
+            doc_title=input_doc_title if input_doc_title.strip() else " ",
+            template_num=input_template_num if input_template_num.strip() else " ",
+            purpose=input_purpose if input_purpose.strip() else " ",
             dynamic_content=dynamic_pdf_content
         )
         
