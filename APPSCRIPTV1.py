@@ -5,7 +5,7 @@ from xhtml2pdf import pisa
 from io import BytesIO
 from datetime import date
 
-# --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- NEW REINFORCED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -14,56 +14,69 @@ HTML_TEMPLATE = """
 <style>
     @page {{
         size: letter;
-        margin: 0.6in 0.6in 0.8in 0.6in;
+        margin: 0.5in 0.5in 0.6in 0.5in;
+        @bottom-right {{
+            content: "Page " counter(page);
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 8pt;
+            color: #94a3b8;
+        }}
     }}
     body {{
         font-family: Helvetica, Arial, sans-serif;
-        color: #334155;
-        line-height: 1.6;
+        color: #1e293b;
+        line-height: 1.5;
         font-size: 10pt;
     }}
     .meta-table {{
         width: 100%;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         border-collapse: collapse;
     }}
     .meta-table td {{
-        padding: 12px 14px;
+        padding: 10px 12px;
         font-size: 9.5pt;
         background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #cbd5e1;
     }}
     .meta-label {{
-        color: #64748b;
+        color: #475569;
         font-weight: bold;
         text-transform: uppercase;
         font-size: 8pt;
-        letter-spacing: 0.3px;
-        width: 20%;
+        letter-spacing: 0.5px;
+        width: 18%;
     }}
     .meta-value {{
-        color: #1e293b;
+        color: #0f172a;
+    }}
+    .section-container {{
+        margin-top: 18px;
+        margin-bottom: 5px;
     }}
     .section-title {{
         color: #1e3a8a;
         font-size: 11pt;
         font-weight: bold;
-        border-bottom: 2px solid #3b82f6;
-        padding-bottom: 4px;
-        margin-top: 25px;
-        margin-bottom: 12px;
+        border-bottom: 1.5px solid #3b82f6;
+        padding-bottom: 3px;
+        margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }}
     .content-block {{
-        margin-bottom: 12px;
-        color: #475569;
-        white-space: pre-wrap;
+        margin-bottom: 10px;
+        color: #334155;
+        font-size: 10pt;
+        padding-left: 2px;
+    }}
+    .text-line {{
+        margin-bottom: 4px;
     }}
     table.matrix-table {{
         width: 100%;
-        margin-top: 15px;
-        margin-bottom: 20px;
+        margin-top: 5px;
+        margin-bottom: 12px;
         border-collapse: collapse;
     }}
     table.matrix-table th {{
@@ -71,19 +84,18 @@ HTML_TEMPLATE = """
         color: #ffffff;
         font-weight: bold;
         text-align: left;
-        padding: 10px 14px;
+        padding: 8px 12px;
         font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border: 1px solid #1e3a8a;
     }}
     table.matrix-table td {{
-        border: 1px solid #e2e8f0;
-        padding: 12px 14px;
-        font-size: 9pt;
+        border: 1px solid #cbd5e1;
+        padding: 9px 12px;
+        font-size: 9.5pt;
         vertical-align: top;
         color: #334155;
-        white-space: pre-wrap;
     }}
     table.matrix-table tr:nth-child(even) td {{
         background-color: #f8fafc;
@@ -91,34 +103,28 @@ HTML_TEMPLATE = """
     .table-key {{
         font-weight: bold;
         color: #0f172a;
+        width: 30%;
     }}
     .image-grid {{
         width: 100%;
-        margin-top: 15px;
-        margin-bottom: 15px;
+        margin-top: 10px;
     }}
     .image-grid td {{
         width: 50%;
-        padding: 10px;
+        padding: 6px;
         text-align: center;
         vertical-align: top;
     }}
     .embedded-img {{
-        width: 260px;
+        width: 280px;
         height: auto;
         border: 1px solid #cbd5e1;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
         color: #64748b;
         font-weight: bold;
-    }}
-    .footer-container {{
-        text-align: right;
-        font-size: 8pt;
-        color: #94a3b8;
-        margin-top: 30px;
     }}
 </style>
 </head>
@@ -141,13 +147,22 @@ HTML_TEMPLATE = """
             <td class="meta-value" colspan="3">{purpose}</td>
         </tr>
     </table>
+    
     {dynamic_content}
-    <div class="footer-container">
-        Document Page <pdf:pagenumber />
-    </div>
 </body>
 </html>
 """
+
+def format_text_block(text_value):
+    """Converts plain text raw newlines into valid, tightly tracked PDF structural blocks."""
+    lines = text_value.strip().split('\n')
+    html_lines = []
+    for line in lines:
+        if line.strip():
+            html_lines.append(f'<div class="text-line">{line}</div>')
+        else:
+            html_lines.append('<div style="height: 6px;"></div>') # Preserves structural intent spacing
+    return "".join(html_lines)
 
 def generate_pdf_content(fields, images_list):
     html_output = []
@@ -160,15 +175,16 @@ def generate_pdf_content(fields, images_list):
     for header, value in fields.items():
         val_clean = value.strip()
         
+        # Section 8 Visuals Assignment Split Handler
         if header == "8. Visuals / Screenshots":
             if not val_clean and not images_list:
                 continue
                 
-            clean_title = "Visuals / Screenshots"
-            html_output.append(f'<div class="section-title">{clean_title}</div>')
+            html_output.append('<div class="section-container">')
+            html_output.append('<div class="section-title">Visuals / Screenshots</div>')
             
             if val_clean:
-                html_output.append(f'<div class="content-block">{val_clean}</div>')
+                html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
             
             if images_list:
                 html_output.append('<table class="image-grid">')
@@ -188,27 +204,44 @@ def generate_pdf_content(fields, images_list):
                         html_output.append('<td></td>')
                     html_output.append('</tr>')
                 html_output.append('</table>')
+            html_output.append('</div>')
             continue
 
         if not val_clean:
             continue
             
+        # Clean up section numbering strings seamlessly
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
+        
+        html_output.append('<div class="section-container">')
         html_output.append(f'<div class="section-title">{clean_title}</div>')
         
         if header in table_based_categories:
-            html_output.append('<table class="matrix-table"><tr><th style="width:35%;">Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
+            html_output.append('<table class="matrix-table">')
+            html_output.append('<tr><th>Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
+            
             for block in val_clean.split('\n'):
                 if not block.strip():
                     continue
-                delimiter = ":" if ":" in block else " "
-                parts = block.split(delimiter, 1)
-                key = parts[0].strip()
-                val = parts[1].strip() if len(parts) > 1 else " "
-                html_output.append(f'<tr><td class="table-key">{key}</td><td>{val}</td></tr>')
+                
+                # Check for standard dividers
+                if ":" in block:
+                    parts = block.split(":", 1)
+                    key = parts[0].strip()
+                    val = parts[1].strip()
+                else:
+                    key = "Action Step"
+                    val = block.strip()
+                
+                # Clean up decorative array bullets if present
+                key = re.sub(r'^[\-\*\s\•]+', '', key)
+                
+                html_output.append(f'<tr><td class="table-key">{key}</td><td>{val if val else " "}</td></tr>')
             html_output.append('</table>')
         else:
-            html_output.append(f'<div class="content-block">{val_clean}</div>')
+            html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
+            
+        html_output.append('</div>')
             
     return "".join(html_output)
 
@@ -219,7 +252,7 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# GLOBAL METADATA: Date has been relocated to the top block alongside Author and Template properties
+# GLOBAL METADATA CONTROL
 st.markdown("#### 📓 Global Metadata Properties")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., WI_010_Sandia-3A1488Headers_Rev1.0")
 
@@ -249,9 +282,9 @@ input_fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", h
 input_fields["2. Purpose"] = st.text_area("2. Purpose:", height=90)
 input_fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. All Users:\nb. Quality Manager / Project Manager:", height=100)
 input_fields["4. Required Tools / Software / Materials"] = st.text_area("4. Required Tools / Software / Materials:", height=100)
-input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM Inspection (Use 'Key: Value' layout for clean metric matrix printing):", value="- Work Ticket Number:\n- Part Number:\n- Serial Number:", height=120)
+input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM Inspection (Use 'Key: Value' layout for clean metric matrix printing):", value="Work Ticket Number:\nPart Number:\nSerial Number:", height=120)
 input_fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=110)
-input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="- Controls Tab:\n- Customer:\n- Part data:\n- Additional Data:\n- Primary Inspector:\n- Notes:\n- Cert_Uncert:\n- Comments Pg:\n- Equip List:\n- Report-V:\n- Report Pictures:", height=260)
+input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="Controls Tab:\nCustomer:\nPart data:\nAdditional Data:\nPrimary Inspector:\nNotes:\nCert_Uncert:\nComments Pg:\nEquip List:\nReport-V:\nReport Pictures:", height=260)
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8 Configuration Hub")
@@ -269,7 +302,7 @@ input_fields["11. Compliance"] = st.text_area("11. Compliance:", height=100)
 
 st.divider()
 
-col_spacer, col_btn = st.columns([2,  1])
+col_spacer, col_btn = st.columns([2, 1])
 with col_btn:
     compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
