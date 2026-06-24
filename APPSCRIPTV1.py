@@ -160,7 +160,7 @@ HTML_TEMPLATE = """
     <table class="header-layout">
         <tr>
             <td>{html_logo_tag}</td>
-            <td class="pdf-app-title">PQI Work Instruction</td>
+            <td class="pdf-app-title">AIS Work Instruction</td>
         </tr>
     </table>
 
