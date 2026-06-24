@@ -1,9 +1,21 @@
 import streamlit as st
 import re
 import base64
+import os
 from xhtml2pdf import pisa
 from io import BytesIO
 from datetime import date
+
+# Helper Function to convert local image to a base64 string safely
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
+
+# Fetch local logo asset
+LOGO_PATH = "AIS Logo.png"
+logo_b64 = get_base64_image(LOGO_PATH)
 
 # --- FIXED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
@@ -21,6 +33,25 @@ HTML_TEMPLATE = """
         color: #1e293b;
         line-height: 1.5;
         font-size: 10pt;
+    }}
+    .header-layout {{
+        width: 100%;
+        margin-bottom: 15px;
+    }}
+    .header-layout td {{
+        vertical-align: middle;
+        border: none;
+    }}
+    .pdf-logo {{
+        width: 180px;
+        height: auto;
+    }}
+    .pdf-app-title {{
+        text-align: right;
+        color: #1e3a8a;
+        font-size: 16pt;
+        font-weight: bold;
+        font-family: Helvetica, Arial, sans-serif;
     }}
     .meta-table {{
         width: 100%;
@@ -129,6 +160,17 @@ HTML_TEMPLATE = """
 </style>
 </head>
 <body>
+    <table class="header-layout">
+        <tr>
+            <td>
+                {html_logo_tag}
+            </td>
+            <td class="pdf-app-title">
+                PQI Work Instruction Document
+            </td>
+        </tr>
+    </table>
+
     <table class="meta-table">
         <tr>
             <td class="meta-label">Doc Title</td>
@@ -169,7 +211,6 @@ def format_text_block(text_value):
 
 def generate_pdf_content(fields, images_list):
     html_output = []
-    
     table_based_categories = [
         "5. Procedure: VCMM/CMM Inspection", 
         "7. Procedure: Data Reporting"
@@ -213,7 +254,6 @@ def generate_pdf_content(fields, images_list):
             continue
             
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
-        
         html_output.append('<div class="section-container">')
         html_output.append(f'<div class="section-title">{clean_title}</div>')
         
@@ -224,7 +264,6 @@ def generate_pdf_content(fields, images_list):
             for block in val_clean.split('\n'):
                 if not block.strip():
                     continue
-                
                 if ":" in block:
                     parts = block.split(":", 1)
                     key = parts[0].strip()
@@ -233,7 +272,7 @@ def generate_pdf_content(fields, images_list):
                     key = "Action Step"
                     val = block.strip()
                 
-                key = re.sub(r'^[\-\*\s\•]+', '', key)
+                key = re.sub(r'^[\-\*]\s*', '', key)
                 html_output.append(f'<tr><td class="table-key">{key}</td><td>{val if val else " "}</td></tr>')
             html_output.append('</table>')
         else:
@@ -245,6 +284,10 @@ def generate_pdf_content(fields, images_list):
 
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
 st.set_page_config(page_title="PQI Work Instruction Generator", layout="centered")
+
+# RENDER APP INTERFACE HEADER IMAGE ACCORDINGLY
+if logo_b64:
+    st.image(os.path.join(os.getcwd(), LOGO_PATH), width=240)
 
 st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
@@ -273,7 +316,6 @@ st.markdown("#### 📋 Instruction Framework Categories")
 st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
 
 input_fields = {}
-
 input_fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=70)
 input_fields["2. Purpose"] = st.text_area("2. Purpose:", height=90)
 input_fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. All Users:\nb. Quality Manager / Project Manager:", height=100)
@@ -310,7 +352,11 @@ if compile_button:
         with st.spinner("Compiling..."):
             dynamic_pdf_content = generate_pdf_content(input_fields, uploaded_images)
             
+            # Setup logo img HTML component cleanly
+            html_logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
+            
             final_html = HTML_TEMPLATE.format(
+                html_logo_tag=html_logo_tag,
                 doc_title=input_doc_title if input_doc_title.strip() else " ",
                 template_num=input_template_num if input_template_num.strip() else " ",
                 doc_date=date_stamp,
