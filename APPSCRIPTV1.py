@@ -343,14 +343,38 @@ def parse_raw_dump(raw_text):
     }
 
 # --- EXECUTIVE STREAMLIT UI DESIGN ---
-st.set_page_config(page_title="Advanced Inspection Services - Compiler", layout="wide")
+# Set theme directly via script configuration
+st.set_page_config(page_title="Advanced Inspection Services - Compiler", layout="centered")
 
-# Modern Title Header Block
+# Injection of Slate and Off-White Custom Styling Variables
+st.markdown("""
+    <style>
+        .reportview-container {
+            background: #f8fafc;
+        }
+        h1 {
+            color: #1e3a8a !important;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+            font-weight: 700 !important;
+        }
+        p {
+            color: #475569 !important;
+        }
+        div[data-baseweb="textarea"] textarea {
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 10pt !important;
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+        }
+    </style>
+""", unsafe_allow_index=True)
+
+# Main Title Header Block
 st.title("🛡️ Secure Document Compiler")
 st.caption("Advanced Inspection Services | Controlled Production Environments")
 st.markdown("---")
 
-# Default template text string fallback
+# Default template framework setup
 DEFAULT_TEMPLATE = """3. Responsibilities:
 a. All Users:
 b. Quality Manager / Project Manager:
@@ -390,41 +414,33 @@ Revision History
 Rev,Date,Changes,Author
 1.0,6/5/2025,Initial document.,Alyssa Barstad"""
 
-# --- SIDEBAR CONTROL PANEL CONFIGURATION ---
-with st.sidebar:
-    st.header("🎛️ Configuration Controls")
-    st.subheader("Specification Framework")
-    raw_input = st.text_area(
-        "Edit template strings and structural tokens below:",
-        value=DEFAULT_TEMPLATE,
-        height=450
-    )
-    
-    st.markdown("---")
-    st.subheader("📸 Layout Attachments")
+# --- CENTER STAGE WORKSPACE ---
+st.subheader("📋 Production Specifications Framework")
+
+# Clean, Focused Input Placement
+raw_input = st.text_area(
+    "Edit template strings and structural tokens below:",
+    value=DEFAULT_TEMPLATE,
+    height=400
+)
+
+# Splitting media attachment and controls into clear side-by-side containers
+col_left, col_right = st.columns(2)
+
+with col_left:
+    st.markdown("#### 📸 Layout Attachments")
     uploaded_images = st.file_uploader(
         "Upload setup figures or tracking charts (JPG/PNG):", 
         accept_multiple_files=True, 
         type=["jpg", "png", "jpeg"]
     )
 
-# --- MAIN SCREEN CONSOLE ---
-st.subheader("📋 Compilation Stage Overview")
+with col_right:
+    st.markdown("#### ⚡ Processing Controls")
+    st.write("Ensure all compliance codes are updated before deploying compilation pipelines.")
+    compile_button = st.button("🚀 Compile Document Framework to PDF", use_container_width=True)
 
-# Live Corporate Metadata Preview Container
-with st.container(border=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**Document Title:** `WI_010_Sandia-3A1488Headers_Rev1.0`")
-        st.markdown("**Core Framework:** `TMP_002 Rev. 1.1`")
-    with col2:
-        st.markdown("**Regulatory Classification:** :red[**ITAR REGULATED DATA**]")
-        st.markdown("**Target Destination:** Local Print Spooler / PDF")
-    st.caption("**Purpose:** To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution.")
-
-st.markdown("#### Actions")
-compile_button = st.button("🚀 Compile Document Framework to Production PDF", use_container_width=True)
-
+# Processing Logic Pipeline Execution
 if compile_button:
     if raw_input.strip():
         with st.spinner("Processing structural specification matrix elements..."):
