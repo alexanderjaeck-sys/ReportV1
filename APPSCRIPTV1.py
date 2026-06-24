@@ -131,6 +131,12 @@ HTML_TEMPLATE = """
             <td class="meta-value">{template_num}</td>
         </tr>
         <tr>
+            <td class="meta-label">Date</td>
+            <td class="meta-value"><strong>{doc_date}</strong></td>
+            <td class="meta-label">Author</td>
+            <td class="meta-value">{doc_author}</td>
+        </tr>
+        <tr>
             <td class="meta-label">Purpose</td>
             <td class="meta-value" colspan="3">{purpose}</td>
         </tr>
@@ -143,7 +149,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-def generate_pdf_content(fields, user_date, user_author, images_list):
+def generate_pdf_content(fields, images_list):
     html_output = []
     
     table_based_categories = [
@@ -204,12 +210,6 @@ def generate_pdf_content(fields, user_date, user_author, images_list):
         else:
             html_output.append(f'<div class="content-block">{val_clean}</div>')
             
-    html_output.append('<div class="section-title">Revision Control History</div>')
-    html_output.append('<table class="matrix-table">')
-    html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
-    html_output.append(f'<tr><td>1.0</td><td>{user_date}</td><td>Initial Document Compilation.</td><td>{user_author}</td></tr>')
-    html_output.append('</table>')
-    
     return "".join(html_output)
 
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
@@ -219,13 +219,15 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# GLOBAL METADATA: Cleared out all initial values so everything boots fresh and completely blank
+# GLOBAL METADATA: Date has been relocated to the top block alongside Author and Template properties
 st.markdown("#### 📓 Global Metadata Properties")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., WI_010_Sandia-3A1488Headers_Rev1.0")
 
-meta_col_left, meta_col_right = st.columns(2)
+meta_col_left, meta_col_mid, meta_col_right = st.columns(3)
 with meta_col_left:
     input_template_num = st.text_input("Template Number:", placeholder="e.g., TMP_002 Rev. 1.1")
+with meta_col_mid:
+    input_date = st.date_input("Tracking Date:", date.today())
 with meta_col_right:
     input_author = st.text_input("Author:", placeholder="Enter your full name or initials...")
 
@@ -267,39 +269,38 @@ input_fields["11. Compliance"] = st.text_area("11. Compliance:", height=100)
 
 st.divider()
 
-col_date, col_spacer, col_btn = st.columns([1, 1, 1])
-with col_date:
-    input_date = st.date_input("Tracking Date:", date.today())
+col_spacer, col_btn = st.columns([2,  1])
 with col_btn:
-    st.write(" ")
-    st.write(" ")
     compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
 if compile_button:
-    author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
-    date_stamp = input_date.strftime("%m/%d/%Y")
-    
-    with st.spinner("Compiling..."):
-        dynamic_pdf_content = generate_pdf_content(input_fields, date_stamp, author_stamp, uploaded_images)
+    if input_doc_title.strip() or any(f.strip() for f in input_fields.values()):
+        author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
+        date_stamp = input_date.strftime("%m/%d/%Y")
         
-        final_html = HTML_TEMPLATE.format(
-            doc_title=input_doc_title if input_doc_title.strip() else " ",
-            template_num=input_template_num if input_template_num.strip() else " ",
-            purpose=input_purpose if input_purpose.strip() else " ",
-            dynamic_content=dynamic_pdf_content
-        )
-        
-        pdf_buffer = BytesIO()
-        pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
-        
-        if not pisa_status.err:
-            st.success("Compilation complete.")
-            st.download_button(
-                label="Download Production PDF",
-                data=pdf_buffer.getvalue(),
-                file_name="Compiled_Specification.pdf",
-                mime="application/pdf",
-                use_container_width=True
+        with st.spinner("Compiling..."):
+            dynamic_pdf_content = generate_pdf_content(input_fields, uploaded_images)
+            
+            final_html = HTML_TEMPLATE.format(
+                doc_title=input_doc_title if input_doc_title.strip() else " ",
+                template_num=input_template_num if input_template_num.strip() else " ",
+                doc_date=date_stamp,
+                doc_author=author_stamp,
+                purpose=input_purpose if input_purpose.strip() else " ",
+                dynamic_content=dynamic_pdf_content
             )
-        else:
-            st.error("Error formatting PDF.")
+            
+            pdf_buffer = BytesIO()
+            pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
+            
+            if not pisa_status.err:
+                st.success("Compilation complete.")
+                st.download_button(
+                    label="Download Production PDF",
+                    data=pdf_buffer.getvalue(),
+                    file_name="Compiled_Specification.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            else:
+                st.error("Error formatting PDF.")
