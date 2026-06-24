@@ -114,9 +114,9 @@ HTML_TEMPLATE = """
     }}
     table.matrix-table td {{
         border: 1px solid #939598;
-        padding: 9px 12px;
+        padding: 14px 12px; /* Increased vertical padding to make room for manual entry writing */
         font-size: 9.5pt;
-        vertical-align: top;
+        vertical-align: middle;
         color: #414042;
     }}
     table.matrix-table tr:nth-child(even) td {{
@@ -234,42 +234,29 @@ def generate_pdf_content(fields, images_list):
         html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
         
         if header in table_based_categories:
-            # Separate plain narrative lines from matrix mapping items
             plain_lines = []
             matrix_lines = []
             
             for block in val_clean.split('\n'):
                 if not block.strip(): continue
-                # Line item qualifies for matrix parsing if it contains a key-value assignment colon
+                # Lines containing colons are identified as table step hooks
                 if ":" in block and not block.strip().startswith(("http:", "https:")):
                     matrix_lines.append(block)
                 else:
-                    # If it's plain notes typed above the matrix entries, save it for plain text injection
                     if not matrix_lines:
                         plain_lines.append(block)
                     else:
-                        # Fallback case if notes are added below the table
                         matrix_lines.append(block)
             
-            # Print plain introductory paragraph text above the table matrix block
             if plain_lines:
                 html_output.append(f'<div class="content-block">{"".join([f"<div class=\'text-line\'>{l}</div>" for l in plain_lines])}</div>')
             
-            # Render the updated table matrix block if active components exist
             if matrix_lines:
                 html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
                 step_counter = 1
-                for block in matrix_lines:
-                    if ":" in block:
-                        parts = block.split(":", 1)
-                        key = parts[0].strip()
-                        val = parts[1].strip()
-                        key = re.sub(r'^[\-\*\s\•]+', '', key)
-                        combined_details = f"<strong>{key}:</strong> {val if val else ''}"
-                    else:
-                        combined_details = re.sub(r'^[\-\*\s\•]+', '', block.strip())
-                        
-                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td>{combined_details}</td></tr>')
+                for _ in matrix_lines:
+                    # Dynamically creates sequential empty steps for the physical worksheet
+                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td> </td></tr>')
                     step_counter += 1
                 html_output.append('</table>')
         else:
@@ -280,7 +267,6 @@ def generate_pdf_content(fields, images_list):
 # --- STREAMLIT UI DESIGN ---
 st.set_page_config(page_title="AIS | Work Instruction Generator", layout="centered")
 
-# Injection of AIS Red and Grey Brand Colors into the App UI
 st.markdown(f"""
     <style>
         .stApp {{ background-color: #ffffff; }}
@@ -299,14 +285,12 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# Logo and Header
 if logo_b64:
     st.image(LOGO_PATH, width=280)
 st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
-# Metadata Section
 st.markdown("#### 📓 Document Metadata")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., Sandia-3A1488-01")
 col_l, col_m, col_r = st.columns(3)
@@ -317,16 +301,17 @@ input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the documen
 
 st.divider()
 
-# Instructions Sections
 st.markdown("#### 📋 Framework Categories")
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
 fields["2. Purpose"] = st.text_area("2. Purpose:", height=65)
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
-fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Lines without colons at the top print as regular text block paragraphs):", value="This section describes the primary configuration step sequencing.\nWork Ticket Number:\nPart Number:\nSerial Number:", height=120)
+
+# Simplistic layout tracking instruction tips
+fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Each line with a colon adds an empty step to the sheet):", value="This section describes the primary configuration step sequencing.\nStep 1:\nStep 2:\nStep 3:", height=120)
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
-fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Lines without colons at the top print as regular text block paragraphs):", value="Follow the database logging structures listed below:\nControls Tab:\nCustomer:\nNotes:", height=180)
+fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Each line with a colon adds an empty step to the sheet):", value="Follow the database logging structures listed below:\nStep 1:\nStep 2:\nStep 3:\nStep 4:", height=150)
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
@@ -359,6 +344,6 @@ if compile_button:
         )
         
         pdf_buffer = BytesIO()
-        pisa.CreatePDF(final_html, dest=pdf_buffer)
+        pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
         st.success("AIS Branded Report Ready!")
         st.download_button("📥 DOWNLOAD PDF", data=pdf_buffer.getvalue(), file_name="AIS_Work_Instruction.pdf", mime="application/pdf", use_container_width=True)
