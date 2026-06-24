@@ -77,10 +77,10 @@ HTML_TEMPLATE = """
         margin-bottom: 5px;
     }}
     .section-title {{
-        color: #E31E24;
+        color: #000000; /* Section header titles set to black */
         font-size: 11pt;
         font-weight: bold;
-        border-bottom: 2px solid #E31E24;
+        border-bottom: 2px solid #E31E24; /* Bar remains AIS Red */
         padding-bottom: 3px;
         margin-bottom: 8px;
         text-transform: uppercase;
@@ -173,7 +173,7 @@ HTML_TEMPLATE = """
         </tr>
         <tr>
             <td class="meta-label">Date</td>
-            <td class="meta-value"><strong>{doc_date}</strong></td>
+            <td class="meta-value" style="width: 45%;"><strong>{doc_date}</strong></td>
             <td class="meta-label">Author</td>
             <td class="meta-value">{doc_author}</td>
         </tr>
