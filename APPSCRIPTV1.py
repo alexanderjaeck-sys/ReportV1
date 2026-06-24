@@ -11,223 +11,170 @@ HTML_TEMPLATE = """
 <head>
 <meta charset="utf-8">
 <style>
-    @page {
+    @page {{
         size: letter;
-        margin: 0.8in 0.6in 0.8in 0.6in;
-        @frame footer {
-            -pdf-frame-content: running-footer;
-            bottom: 0.4in;
-            left: 0.6in;
-            right: 0.6in;
-            height: 0.3in;
-        }
-    }
-    
-    body {
+        margin: 0.6in 0.6in 0.8in 0.6in;
+    }}
+    body {{
         font-family: Helvetica, Arial, sans-serif;
-        color: #1e293b;
-        line-height: 1.5;
-        font-size: 9.5pt;
-    }
-    
-    /* Document Header */
-    .doc-header {
-        border-bottom: 2px solid #0f172a;
-        padding-bottom: 8px;
-        margin-bottom: 20px;
-    }
-    .company-title {
-        font-size: 14pt;
-        font-weight: bold;
-        color: #0f172a;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    /* Compliance Alert Header */
-    .warning-box {
-        border-left: 3px solid #dc2626;
+        color: #334155;
+        line-height: 1.6;
+        font-size: 10pt;
+    }}
+    .warning-box {{
+        border-left: 4px solid #dc2626;
         background-color: #fef2f2;
-        padding: 10px 14px;
-        margin-bottom: 20px;
-    }
-    .warning-title {
-        color: #991b1b;
+        padding: 14px 18px;
+        margin-bottom: 25px;
+    }}
+    .warning-title {{
+        color: #b91c1c;
         font-weight: bold;
         text-transform: uppercase;
-        font-size: 8.5pt;
-        letter-spacing: 0.5px;
-        margin-bottom: 2px;
-    }
-    .warning-text {
-        color: #7f1d1d;
-        font-size: 8pt;
-    }
-    
-    /* Executive Metadata Grid */
-    .meta-table {
-        width: 100%;
-        margin-bottom: 25px;
-        border-collapse: collapse;
-    }
-    .meta-table td {
-        padding: 8px 10px;
         font-size: 9pt;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }}
+    .warning-text {{
+        color: #7f1d1d;
+        font-size: 8.5pt;
+    }}
+    .meta-table {{
+        width: 100%;
+        margin-bottom: 35px;
+        border-collapse: collapse;
+    }}
+    .meta-table td {{
+        padding: 12px 14px;
+        font-size: 9.5pt;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
-    }
-    .meta-label {
-        color: #475569;
+    }}
+    .meta-label {{
+        color: #64748b;
         font-weight: bold;
         text-transform: uppercase;
-        font-size: 7.5pt;
+        font-size: 8pt;
         letter-spacing: 0.3px;
-    }
-    .meta-value {
-        color: #0f172a;
-    }
-    
-    /* Section Headers */
-    .section-title {
+        width: 20%;
+    }}
+    .meta-value {{
+        color: #1e293b;
+    }}
+    .section-title {{
         color: #1e3a8a;
         font-size: 11pt;
         font-weight: bold;
-        border-bottom: 1.5px solid #3b82f6;
-        padding-bottom: 3px;
-        margin-top: 22px;
-        margin-bottom: 10px;
+        border-bottom: 2px solid #3b82f6;
+        padding-bottom: 4px;
+        margin-top: 25px;
+        margin-bottom: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        page-break-after: avoid;
-    }
-    
-    /* Content Elements & Nested Lists */
-    .content-block {
-        margin-bottom: 10px;
-        color: #334155;
-    }
-    
-    ol, ul {
-        margin-top: 4px;
+    }}
+    .content-block {{
         margin-bottom: 12px;
-        padding-left: 20px;
-    }
-    li {
-        margin-bottom: 5px;
-        color: #334155;
-    }
-    
-    /* Data Mappings & Revision Control Tables */
-    table.matrix-table {
-        width: 100%;
-        margin-top: 10px;
+        color: #475569;
+        padding-left: 2px;
+    }}
+    ol, ul {{
+        margin-top: 5px;
         margin-bottom: 15px;
+        padding-left: 22px;
+    }}
+    ol ol {{
+        margin-top: 3px;
+        margin-bottom: 5px;
+        padding-left: 20px;
+        list-style-type: lower-alpha;
+    }}
+    li {{
+        margin-bottom: 6px;
+        color: #334155;
+    }}
+    table.matrix-table {{
+        width: 100%;
+        margin-top: 15px;
+        margin-bottom: 20px;
         border-collapse: collapse;
-        page-break-inside: avoid;
-    }
-    table.matrix-table th {
-        background-color: #0f172a;
+    }}
+    table.matrix-table th {{
+        background-color: #1e3a8a;
         color: #ffffff;
         font-weight: bold;
         text-align: left;
-        padding: 8px 12px;
-        font-size: 8.5pt;
+        padding: 10px 14px;
+        font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border: 1px solid #0f172a;
-    }
-    table.matrix-table td {
+        border: 1px solid #1e3a8a;
+    }}
+    table.matrix-table td {{
         border: 1px solid #e2e8f0;
-        padding: 10px 12px;
-        font-size: 8.5pt;
+        padding: 12px 14px;
+        font-size: 9pt;
         vertical-align: top;
         color: #334155;
-    }
-    table.matrix-table tr:nth-child(even) td {
+    }}
+    table.matrix-table tr:nth-child(even) td {{
         background-color: #f8fafc;
-    }
-    .table-key {
+    }}
+    .table-key {{
         font-weight: bold;
         color: #0f172a;
-    }
-    
-    /* Image Grid Engineering */
-    .image-grid {
+    }}
+    .image-grid {{
         width: 100%;
-        margin-top: 15px;
-        margin-bottom: 15px;
-        page-break-inside: avoid;
-    }
-    .image-grid td {
-        padding: 8px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }}
+    .image-grid td {{
+        width: 50%;
+        padding: 10px;
         text-align: center;
         vertical-align: top;
-    }
-    .embedded-img {
-        width: 240px;
+    }}
+    .embedded-img {{
+        width: 260px;
         height: auto;
         border: 1px solid #cbd5e1;
-        margin-bottom: 5px;
-    }
-    .image-grid-caption {
-        font-size: 8pt;
+        margin-bottom: 6px;
+    }}
+    .image-grid-caption {{
+        font-size: 8.5pt;
         color: #64748b;
         font-weight: bold;
-    }
-    
-    /* Running Footer Style */
-    #running-footer {
+    }}
+    .footer-container {{
         text-align: right;
         font-size: 8pt;
         color: #94a3b8;
-        border-top: 1px solid #e2e8f0;
-        padding-top: 4px;
-    }
+        margin-top: 30px;
+    }}
 </style>
 </head>
 <body>
-
-    <div id="running-footer">
-        INTERNAL USE ONLY  |  Page <pdf:pagenumber /> of <pdf:pagecount />
-    </div>
-
-    <div class="doc-header">
-        <div class="company-title">Advanced Inspection Services</div>
-    </div>
-
     <div class="warning-box">
-        <div class="warning-title">CONTROLLED PRODUCTION SPECIFICATION DOCUMENT</div>
-        <div class="warning-text"><strong>ITAR REGULATED DATA:</strong> Unauthorized distribution, reproduction, or digital capturing of this material outside of authorized platforms is strictly prohibited under federal compliance mandates.</div>
+        <div class="warning-title">[DRAFT] NOT PUBLISHED UNTIL RED NOTES COMPLETED</div>
+        <div class="warning-text"><strong>ITAR REGULATED:</strong> Do not store, share, or screenshot this instruction outside of authorized platforms.</div>
     </div>
-
     <table class="meta-table">
         <tr>
-            <td class="meta-label" width="15%">Doc Title</td>
-            <td class="meta-value" width="50%"><strong>{doc_title}</strong></td>
-            <td class="meta-label" width="15%">Template</td>
-            <td class="meta-value" width="20%">{template_num}</td>
+            <td class="meta-label">Doc Title</td>
+            <td class="meta-value" style="width: 45%;"><strong>{doc_title}</strong></td>
+            <td class="meta-label">Template</td>
+            <td class="meta-value">{template_num}</td>
         </tr>
         <tr>
             <td class="meta-label">Purpose</td>
             <td class="meta-value" colspan="3">{purpose}</td>
         </tr>
     </table>
-
     {dynamic_content}
-
     {image_content}
-
-</body>
-</html>
-
-    {dynamic_content}
-
-    {image_content}
-
     <div class="footer-container">
         Document Page <pdf:pagenumber />
     </div>
-
 </body>
 </html>
 """
@@ -245,7 +192,7 @@ def parse_raw_dump(raw_text):
     purpose = "To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution."
     
     html_output = []
-    current_section = None  # None, "ordered", "unordered", "sub_ordered"
+    current_section = None
     in_table = False
     in_rev_history = False
     rev_rows = []
@@ -261,7 +208,6 @@ def parse_raw_dump(raw_text):
         if any(x in line.lower() for x in ["purpose", "wi template number", "draft:", "the following table:"]):
             continue
 
-        # Detect Revision History section
         if "revision history" in line.lower() or "rev,date,changes" in line.lower():
             in_rev_history = True
             if in_table:
@@ -287,7 +233,6 @@ def parse_raw_dump(raw_text):
                 rev_rows.append(f"<tr><td>{rev}</td><td>{date}</td><td>{changes}</td><td>{author}</td></tr>")
             continue
 
-        # Section Headings
         if line.endswith(':') or any(line.startswith(prefix) for prefix in known_headers):
             if in_table:
                 html_output.append("</table>")
@@ -306,7 +251,6 @@ def parse_raw_dump(raw_text):
             current_section = "section_started"
             continue
             
-        # Field mappings
         if "tab:" in line.lower() or "list:" in line.lower() or line.startswith("Report-V") or line.startswith("Notes:") or line.startswith("Cert_Uncert") or line.startswith("Equip List") or line.startswith("Comments Pg") or line.startswith("Customer:") or line.startswith("Part data:") or line.startswith("Additional Data:") or line.startswith("Primary Inspector:") or line.startswith("Report Pictures:"):
             delimiter = ":" if ":" in line else " "
             parts = line.split(delimiter, 1)
@@ -314,7 +258,6 @@ def parse_raw_dump(raw_text):
             val = parts[1].strip() if len(parts) > 1 else ""
             
             if not val or val.lower() == "no necessary input" or val.lower() == "leave the rest untouched.":
-                # If key is parsed but has no value, still keep it structured beautifully in the PDF
                 val = " "
                 
             if current_section == "sub_ordered":
@@ -338,7 +281,6 @@ def parse_raw_dump(raw_text):
             html_output.append("</table>")
             in_table = False
 
-        # --- SMART MULTI-LEVEL LIST PARSER ---
         is_primary_step = line[0].isdigit() or (len(line) > 1 and line[1] == '.') or line.startswith("- ") or line.startswith("* ")
         is_sub_step = re.match(r'^[a-z]\s*[\.\)]', line) or (current_section in ["ordered", "sub_ordered"] and not is_primary_step and (line.startswith("Work Ticket") or line.startswith("Part Number") or line.startswith("Serial Number") or line.startswith("In G:") or line.startswith("G:\\") or line.startswith("EX:")) )
 
@@ -400,11 +342,15 @@ def parse_raw_dump(raw_text):
         "dynamic_content": "".join(html_output)
     }
 
-# --- STREAMLIT CONTROL PANEL ---
-st.set_page_config(page_title="Secure Document Compiler", layout="centered")
-st.title("🛡️ ITAR Secure Document Compiler")
+# --- EXECUTIVE STREAMLIT UI DESIGN ---
+st.set_page_config(page_title="Advanced Inspection Services - Compiler", layout="wide")
 
-# Fixed: This now contains only the high-level template framework and bold variables
+# Modern Title Header Block
+st.title("🛡️ Secure Document Compiler")
+st.caption("Advanced Inspection Services | Controlled Production Environments")
+st.markdown("---")
+
+# Default template text string fallback
 DEFAULT_TEMPLATE = """3. Responsibilities:
 a. All Users:
 b. Quality Manager / Project Manager:
@@ -444,22 +390,44 @@ Revision History
 Rev,Date,Changes,Author
 1.0,6/5/2025,Initial document.,Alyssa Barstad"""
 
-raw_input = st.text_area(
-    "Configure specification strings here:",
-    value=DEFAULT_TEMPLATE,
-    height=360
-)
+# --- SIDEBAR CONTROL PANEL CONFIGURATION ---
+with st.sidebar:
+    st.header("🎛️ Configuration Controls")
+    st.subheader("Specification Framework")
+    raw_input = st.text_area(
+        "Edit template strings and structural tokens below:",
+        value=DEFAULT_TEMPLATE,
+        height=450
+    )
+    
+    st.markdown("---")
+    st.subheader("📸 Layout Attachments")
+    uploaded_images = st.file_uploader(
+        "Upload setup figures or tracking charts (JPG/PNG):", 
+        accept_multiple_files=True, 
+        type=["jpg", "png", "jpeg"]
+    )
 
-st.subheader("📸 Attachment Injection (Optional)")
-uploaded_images = st.file_uploader(
-    "Upload setup figures or tracking charts (JPG/PNG):", 
-    accept_multiple_files=True, 
-    type=["jpg", "png", "jpeg"]
-)
+# --- MAIN SCREEN CONSOLE ---
+st.subheader("📋 Compilation Stage Overview")
 
-if st.button("Compile to PDF"):
+# Live Corporate Metadata Preview Container
+with st.container(border=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Document Title:** `WI_010_Sandia-3A1488Headers_Rev1.0`")
+        st.markdown("**Core Framework:** `TMP_002 Rev. 1.1`")
+    with col2:
+        st.markdown("**Regulatory Classification:** :red[**ITAR REGULATED DATA**]")
+        st.markdown("**Target Destination:** Local Print Spooler / PDF")
+    st.caption("**Purpose:** To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution.")
+
+st.markdown("#### Actions")
+compile_button = st.button("🚀 Compile Document Framework to Production PDF", use_container_width=True)
+
+if compile_button:
     if raw_input.strip():
-        with st.spinner("Processing template elements..."):
+        with st.spinner("Processing structural specification matrix elements..."):
             content_data = parse_raw_dump(raw_input)
             
             img_html = []
@@ -496,12 +464,14 @@ if st.button("Compile to PDF"):
             pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
             
             if not pisa_status.err:
-                st.success("Document successfully compiled locally!")
+                st.balloons()
+                st.success("Verification Matrix Compiled Successfully!")
                 st.download_button(
                     label="📥 Download Polish Production PDF",
                     data=pdf_buffer.getvalue(),
                     file_name="Compiled_Specification.pdf",
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    use_container_width=True
                 )
             else:
                 st.error("Error formatting PDF document.")
