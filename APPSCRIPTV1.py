@@ -6,6 +6,7 @@ from io import BytesIO
 from datetime import date
 
 # --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# (Removed the red draft warning banner box completely)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -22,27 +23,9 @@ HTML_TEMPLATE = """
         line-height: 1.6;
         font-size: 10pt;
     }}
-    .warning-box {{
-        border-left: 4px solid #dc2626;
-        background-color: #fef2f2;
-        padding: 14px 18px;
-        margin-bottom: 25px;
-    }}
-    .warning-title {{
-        color: #b91c1c;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 9pt;
-        letter-spacing: 0.5px;
-        margin-bottom: 4px;
-    }}
-    .warning-text {{
-        color: #7f1d1d;
-        font-size: 8.5pt;
-    }}
     .meta-table {{
         width: 100%;
-        margin-bottom: 35px;
+        margin-bottom: 25px;
         border-collapse: collapse;
     }}
     .meta-table td {{
@@ -155,10 +138,6 @@ HTML_TEMPLATE = """
 </style>
 </head>
 <body>
-    <div class="warning-box">
-        <div class="warning-title">[DRAFT] NOT PUBLISHED UNTIL RED NOTES COMPLETED</div>
-        <div class="warning-text"><strong>ITAR REGULATED:</strong> Do not store, share, or screenshot this instruction outside of authorized platforms.</div>
-    </div>
     <table class="meta-table">
         <tr>
             <td class="meta-label">Doc Title</td>
@@ -182,19 +161,8 @@ HTML_TEMPLATE = """
 
 # --- STRING/ARRAY AUTOMATION PARSER ---
 def parse_raw_dump(raw_text, user_date, user_author):
-    clean_lines = []
-    for line in raw_text.split('\n'):
-        line_fixed = line.strip()
-        if line_fixed:
-            clean_lines.append(line_fixed)
-            
-    doc_title = "WI_010_Sandia-3A1488Headers_Rev1.0"
-    template_num = "TMP_002 Rev. 1.1" 
-    purpose = "To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution."
-    
-    html_output = []
-    current_section = None
-    in_table = False
+    # First-pass lookahead group initialization to isolate empty fields defensively
+    lines_pool = [line.strip() for line in raw_text.split('\n') if line.strip()]
     
     known_headers = [
         "WI Template Number", "Purpose", "Responsibilities", 
@@ -203,12 +171,47 @@ def parse_raw_dump(raw_text, user_date, user_author):
         "Visuals / Screenshots", "Safety / Precautions", 
         "Troubleshooting / Notes", "Compliance", "Revision History"
     ]
+
+    # Map headers to their exact structural content indices
+    header_content_map = {}
+    current_key = None
+    for line in lines_pool:
+        matched_header = None
+        for h in known_headers:
+            if line.startswith(h) or line.replace(":", "").strip() == h:
+                matched_header = h
+                break
+        
+        if matched_header:
+            current_key = matched_header
+            header_content_map[current_key] = []
+        elif current_key:
+            header_content_map[current_key].append(line)
+
+    html_output = []
+    current_section = None
+    in_table = False
     
-    for line in clean_lines:
+    for line in lines_pool:
         if any(x in line.lower() for x in ["draft:", "the following table:", "rev,date,changes,author", "1.0,"]):
             continue
 
-        if line.endswith(':') or any(line.startswith(prefix) for prefix in known_headers):
+        # Lookahead verification before opening a primary section title
+        is_header_line = False
+        matched_h_name = None
+        for h in known_headers:
+            if line.startswith(h) or line.replace(":", "").strip() == h:
+                is_header_line = True
+                matched_h_name = h
+                break
+
+        if is_header_line:
+            # CRITICAL RULES FILTER: If header is empty down the stream, skip rendering completely
+            associated_content = header_content_map.get(matched_h_name, [])
+            if not associated_content and matched_h_name != "Revision History":
+                current_section = "skip_mode"
+                continue
+
             if in_table:
                 html_output.append("</table>")
                 in_table = False
@@ -223,7 +226,6 @@ def parse_raw_dump(raw_text, user_date, user_author):
             clean_header = line.replace(":", "").strip()
             clean_header = re.sub(r'^\d+\.\s*', '', clean_header)
             
-            # Skip manual insertion of Revision History inside main parser loop
             if "revision history" in clean_header.lower():
                 current_section = "skip_mode"
                 continue
@@ -287,7 +289,7 @@ def parse_raw_dump(raw_text, user_date, user_author):
                 html_output.append('<ol>')
                 current_section = "ordered"
                 
-            clean_li = re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', clean_li) if 'clean_li' in locals() else re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', line)
+            clean_li = re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', line)
             clean_li = re.sub(r'^[\-\*]\s*', '', clean_li)
             html_output.append(f'<li>{clean_li}') 
             
@@ -312,28 +314,41 @@ def parse_raw_dump(raw_text, user_date, user_author):
     elif current_section == "ordered": html_output.append("</ol>")
     elif current_section == "unordered": html_output.append("</ul>")
     
-    # Dynamically inject the structural table using the exact native box inputs
+    # Revision History block generation remains active automatically
     html_output.append('<div class="section-title">Revision Control History</div>')
     html_output.append('<table class="matrix-table">')
     html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
     html_output.append(f'<tr><td>1.0</td><td>{user_date}</td><td>Initial Document Compilation.</td><td>{user_author}</td></tr>')
     html_output.append('</table>')
     
-    return {
-        "doc_title": doc_title,
-        "template_num": template_num,
-        "purpose": purpose,
-        "dynamic_content": "".join(html_output)
-    }
+    return {"dynamic_content": "".join(html_output)}
 
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
-st.set_page_config(page_title="Document Compiler", layout="centered")
+st.set_page_config(page_title="PQI Work Instruction Generator", layout="centered")
 
-st.title("Work Instruction Generator")
+st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# Cleared out the messy comma-string from the raw prompt zone entirely
+# EDITABLE HEADERS BLOCK: Pulling the global doc keys into editable components
+st.markdown("#### 📓 Global Metadata Properties")
+input_doc_title = st.text_input("Document Title:", value="WI_010_Sandia-3A1488Headers_Rev1.0")
+
+meta_col_left, meta_col_right = st.columns(2)
+with meta_col_left:
+    input_template_num = st.text_input("Template Number:", value="TMP_002 Rev. 1.1")
+with meta_col_right:
+    input_author = st.text_input("Author:", placeholder="Enter your full name or initials...")
+
+input_purpose = st.text_area(
+    "Purpose Scope Description:",
+    value="To provide step-by-step instructions to run customer specific part, 3A1488-01 Headers. This ensures consistency, compliance with Sandia-specific protocols, and efficient workflow execution.",
+    height=90
+)
+
+st.divider()
+
+# Main instruction workflow input window
 DEFAULT_TEMPLATE = """1. WI Template Number:
 
 2. Purpose:
@@ -358,43 +373,31 @@ DEFAULT_TEMPLATE = """1. WI Template Number:
 
 12. Revision History:"""
 
+st.markdown("#### 📋 Instruction Framework Content")
 raw_input = st.text_area(
-    "Specification Framework Input Data:",
+    "Edit your category content below. Categories left totally blank will be hidden from the PDF:",
     value=DEFAULT_TEMPLATE,
-    height=420
+    height=400
 )
 
 st.divider()
 
-# NEW SECURE INPUT ROW: Tracking metadata for creator credentials
-st.markdown("#### 📝 Document Attribution Credentials")
-meta_col1, meta_col2 = st.columns(2)
-
-with meta_col1:
-    input_author = st.text_input("Author:", placeholder="Enter full name or initials...")
-
-with meta_col2:
-    input_date = st.date_input("Compilation Tracking Date:", date.today())
-
-st.divider()
-
-col1, col2, col3 = st.columns([2, 1, 1])
-
-with col1:
+col_date, col_upload, col_btn = st.columns([1, 1, 1])
+with col_date:
+    input_date = st.date_input("Tracking Date:", date.today())
+with col_upload:
     uploaded_images = st.file_uploader(
         "Upload reference figures:", 
         accept_multiple_files=True, 
         type=["jpg", "png", "jpeg"]
     )
-
-with col3:
+with col_btn:
     st.write(" ")
     st.write(" ")
     compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
 if compile_button:
     if raw_input.strip():
-        # Fallback if field left completely blank
         author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
         date_stamp = input_date.strftime("%m/%d/%Y")
         
@@ -405,7 +408,6 @@ if compile_button:
             if uploaded_images:
                 img_html.append('<div class="section-title">Visual Layout Reference Attachments</div>')
                 img_html.append('<table class="image-grid">')
-                
                 for i in range(0, len(uploaded_images), 2):
                     img_html.append('<tr>')
                     img1 = uploaded_images[i]
@@ -424,9 +426,9 @@ if compile_button:
                 img_html.append('</table>')
             
             final_html = HTML_TEMPLATE.format(
-                doc_title=content_data["doc_title"],
-                template_num=content_data["template_num"],
-                purpose=content_data["purpose"],
+                doc_title=input_doc_title,
+                template_num=input_template_num,
+                purpose=input_purpose,
                 dynamic_content=content_data["dynamic_content"],
                 image_content="".join(img_html)
             )
