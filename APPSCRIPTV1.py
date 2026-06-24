@@ -6,7 +6,6 @@ from io import BytesIO
 from datetime import date
 
 # --- EXPANDED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
-# (Removed the red draft warning banner box completely)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -59,22 +58,7 @@ HTML_TEMPLATE = """
     .content-block {{
         margin-bottom: 12px;
         color: #475569;
-        padding-left: 2px;
-    }}
-    ol, ul {{
-        margin-top: 5px;
-        margin-bottom: 15px;
-        padding-left: 22px;
-    }}
-    ol ol {{
-        margin-top: 3px;
-        margin-bottom: 5px;
-        padding-left: 20px;
-        list-style-type: lower-alpha;
-    }}
-    li {{
-        margin-bottom: 6px;
-        color: #334155;
+        white-space: pre-wrap; /* Preserves manual enter spacing */
     }}
     table.matrix-table {{
         width: 100%;
@@ -99,6 +83,7 @@ HTML_TEMPLATE = """
         font-size: 9pt;
         vertical-align: top;
         color: #334155;
+        white-space: pre-wrap;
     }}
     table.matrix-table tr:nth-child(even) td {{
         background-color: #f8fafc;
@@ -159,169 +144,50 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- STRING/ARRAY AUTOMATION PARSER ---
-def parse_raw_dump(raw_text, user_date, user_author):
-    # First-pass lookahead group initialization to isolate empty fields defensively
-    lines_pool = [line.strip() for line in raw_text.split('\n') if line.strip()]
-    
-    known_headers = [
-        "WI Template Number", "Purpose", "Responsibilities", 
-        "Required Tools / Software / Materials", "Procedure: VCMM/CMM Inspection", 
-        "Procedure: Visual Inspection", "Procedure: Data Reporting", 
-        "Visuals / Screenshots", "Safety / Precautions", 
-        "Troubleshooting / Notes", "Compliance", "Revision History"
-    ]
-
-    # Map headers to their exact structural content indices
-    header_content_map = {}
-    current_key = None
-    for line in lines_pool:
-        matched_header = None
-        for h in known_headers:
-            if line.startswith(h) or line.replace(":", "").strip() == h:
-                matched_header = h
-                break
-        
-        if matched_header:
-            current_key = matched_header
-            header_content_map[current_key] = []
-        elif current_key:
-            header_content_map[current_key].append(line)
-
+def generate_pdf_content(fields, user_date, user_author):
     html_output = []
-    current_section = None
-    in_table = False
     
-    for line in lines_pool:
-        if any(x in line.lower() for x in ["draft:", "the following table:", "rev,date,changes,author", "1.0,"]):
-            continue
-
-        # Lookahead verification before opening a primary section title
-        is_header_line = False
-        matched_h_name = None
-        for h in known_headers:
-            if line.startswith(h) or line.replace(":", "").strip() == h:
-                is_header_line = True
-                matched_h_name = h
-                break
-
-        if is_header_line:
-            # CRITICAL RULES FILTER: If header is empty down the stream, skip rendering completely
-            associated_content = header_content_map.get(matched_h_name, [])
-            if not associated_content and matched_h_name != "Revision History":
-                current_section = "skip_mode"
-                continue
-
-            if in_table:
-                html_output.append("</table>")
-                in_table = False
-            if current_section == "sub_ordered":
-                html_output.append("</ol></li>")
-                current_section = "ordered"
-            if current_section == "ordered":
-                html_output.append("</ol>")
-            elif current_section == "unordered":
-                html_output.append("</ul>")
-                
-            clean_header = line.replace(":", "").strip()
-            clean_header = re.sub(r'^\d+\.\s*', '', clean_header)
+    # Define structural categories that need rendering as key-value metric tables
+    table_based_categories = [
+        "5. Procedure: VCMM/CMM Inspection", 
+        "7. Procedure: Data Reporting"
+    ]
+    
+    for header, value in fields.items():
+        # Clean the string formatting values
+        val_clean = value.strip()
+        if not val_clean:
+            continue # Skip rendering this section entirely if left completely blank
             
-            if "revision history" in clean_header.lower():
-                current_section = "skip_mode"
-                continue
-                
-            html_output.append(f'<div class="section-title">{clean_header}</div>')
-            current_section = "section_started"
-            continue
+        clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
+        html_output.append(f'<div class="section-title">{clean_title}</div>')
+        
+        # Determine layout approach based on data category classification
+        if header in table_based_categories:
+            html_output.append('<table class="matrix-table"><tr><th style="width:35%;">Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
             
-        if current_section == "skip_mode":
-            continue
-
-        if "tab:" in line.lower() or "list:" in line.lower() or line.startswith("Report-V") or line.startswith("Notes:") or line.startswith("Cert_Uncert") or line.startswith("Equip List") or line.startswith("Comments Pg") or line.startswith("Customer:") or line.startswith("Part data:") or line.startswith("Additional Data:") or line.startswith("Primary Inspector:") or line.startswith("Report Pictures:"):
-            delimiter = ":" if ":" in line else " "
-            parts = line.split(delimiter, 1)
-            key = parts[0].strip()
-            val = parts[1].strip() if len(parts) > 1 else ""
-            
-            if not val or val.lower() == "no necessary input" or val.lower() == "leave the rest untouched.":
-                val = " "
+            for block in val_clean.split('\n'):
+                if not block.strip():
+                    continue
+                delimiter = ":" if ":" in block else " "
+                parts = block.split(delimiter, 1)
+                key = parts[0].strip()
+                val = parts[1].strip() if len(parts) > 1 else " "
+                html_output.append(f'<tr><td class="table-key">{key}</td><td>{val}</td></tr>')
                 
-            if current_section == "sub_ordered":
-                html_output.append("</ol></li>")
-                current_section = "ordered"
-            if current_section == "ordered":
-                html_output.append("</ol>")
-                current_section = None
-            elif current_section == "unordered":
-                html_output.append("</ul>")
-                current_section = None
-                
-            if not in_table:
-                html_output.append('<table class="matrix-table"><tr><th style="width:35%;">Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
-                in_table = True
-            
-            html_output.append(f'<tr><td class="table-key">{key}</td><td>{val}</td></tr>')
-            continue
-
-        if in_table:
-            html_output.append("</table>")
-            in_table = False
-
-        is_primary_step = line[0].isdigit() or (len(line) > 1 and line[1] == '.') or line.startswith("- ") or line.startswith("* ")
-        is_sub_step = re.match(r'^[a-z]\s*[\.\)]', line) or (current_section in ["ordered", "sub_ordered"] and not is_primary_step and (line.startswith("Work Ticket") or line.startswith("Part Number") or line.startswith("Serial Number") or line.startswith("In G:") or line.startswith("G:\\") or line.startswith("EX:")) )
-
-        if is_sub_step:
-            if current_section == "ordered":
-                html_output.append('<ol>')
-                current_section = "sub_ordered"
-            elif current_section == "section_started":
-                html_output.append('<ol><ol>')
-                current_section = "sub_ordered"
-                
-            clean_li = re.sub(r'^[a-z]\s*[\.\)]\s*', '', line)
-            html_output.append(f'<li>{clean_li}</li>')
-            
-        elif is_primary_step:
-            if current_section == "sub_ordered":
-                html_output.append('</ol></li>')
-                current_section = "ordered"
-            if current_section != "ordered":
-                html_output.append('<ol>')
-                current_section = "ordered"
-                
-            clean_li = re.sub(r'^\d+\s*[a-zA-Z]?\.?\s*', '', line)
-            clean_li = re.sub(r'^[\-\*]\s*', '', clean_li)
-            html_output.append(f'<li>{clean_li}') 
-            
+            html_output.append('</table>')
         else:
-            if current_section == "sub_ordered":
-                html_output.append('</ol></li>')
-                current_section = "ordered"
-            if current_section == "ordered":
-                html_output.append('</ol>')
-                current_section = None
-            if current_section != "unordered" and current_section == "section_started":
-                html_output.append('<ul>')
-                current_section = "unordered"
-                
-            if current_section == "unordered":
-                html_output.append(f'<li>{line}</li>')
-            else:
-                html_output.append(f'<div class="content-block">{line}</div>')
-                
-    if in_table: html_output.append("</table>")
-    if current_section == "sub_ordered": html_output.append("</ol></li></ol>")
-    elif current_section == "ordered": html_output.append("</ol>")
-    elif current_section == "unordered": html_output.append("</ul>")
-    
-    # Revision History block generation remains active automatically
+            # Standard structural narrative printing block
+            html_output.append(f'<div class="content-block">{val_clean}</div>')
+            
+    # Always append the structural Revision Control box at the base
     html_output.append('<div class="section-title">Revision Control History</div>')
     html_output.append('<table class="matrix-table">')
     html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
     html_output.append(f'<tr><td>1.0</td><td>{user_date}</td><td>Initial Document Compilation.</td><td>{user_author}</td></tr>')
     html_output.append('</table>')
     
-    return {"dynamic_content": "".join(html_output)}
+    return "".join(html_output)
 
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
 st.set_page_config(page_title="PQI Work Instruction Generator", layout="centered")
@@ -330,7 +196,7 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# EDITABLE HEADERS BLOCK: Pulling the global doc keys into editable components
+# Global Document Control Configuration Headers Block
 st.markdown("#### 📓 Global Metadata Properties")
 input_doc_title = st.text_input("Document Title:", value="WI_010_Sandia-3A1488Headers_Rev1.0")
 
@@ -348,37 +214,24 @@ input_purpose = st.text_area(
 
 st.divider()
 
-# Main instruction workflow input window
-DEFAULT_TEMPLATE = """1. WI Template Number:
+# --- STANDALONE INPUT BOX GRID FOR INDIVIDUAL CRITERIA ---
+st.markdown("#### 📋 Instruction Framework Categories")
+st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
 
-2. Purpose:
+# Initializing each criteria element cleanly with custom heights
+input_fields = {}
 
-3. Responsibilities:
-
-4. Required Tools / Software / Materials:
-
-5. Procedure: VCMM/CMM Inspection:
-
-6. Procedure: Visual Inspection:
-
-7. Procedure: Data Reporting:
-
-8. Visuals / Screenshots:
-
-9. Safety / Precautions:
-
-10. Troubleshooting / Notes:
-
-11. Compliance:
-
-12. Revision History:"""
-
-st.markdown("#### 📋 Instruction Framework Content")
-raw_input = st.text_area(
-    "Edit your category content below. Categories left totally blank will be hidden from the PDF:",
-    value=DEFAULT_TEMPLATE,
-    height=400
-)
+input_fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=70)
+input_fields["2. Purpose"] = st.text_area("2. Purpose:", height=90)
+input_fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. All Users:\nb. Quality Manager / Project Manager:", height=100)
+input_fields["4. Required Tools / Software / Materials"] = st.text_area("4. Required Tools / Software / Materials:", height=100)
+input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM Inspection (Use 'Key: Value' layout for clean metric matrix printing):", value="- Work Ticket Number:\n- Part Number:\n- Serial Number:", height=120)
+input_fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=110)
+input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="- Controls Tab:\n- Customer:\n- Part data:\n- Additional Data:\n- Primary Inspector:\n- Notes:\n- Cert_Uncert:\n- Comments Pg:\n- Equip List:\n- Report-V:\n- Report Pictures:", height=260)
+input_fields["8. Visuals / Screenshots"] = st.text_area("8. Visuals / Screenshots:", height=80)
+input_fields["9. Safety / Precautions"] = st.text_area("9. Safety / Precautions:", height=100)
+input_fields["10. Troubleshooting / Notes"] = st.text_area("10. Troubleshooting / Notes:", height=100)
+input_fields["11. Compliance"] = st.text_area("11. Compliance:", height=100)
 
 st.divider()
 
@@ -397,53 +250,52 @@ with col_btn:
     compile_button = st.button("Compile to PDF", type="primary", use_container_width=True)
 
 if compile_button:
-    if raw_input.strip():
-        author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
-        date_stamp = input_date.strftime("%m/%d/%Y")
+    author_stamp = input_author.strip() if input_author.strip() else "Not Specified"
+    date_stamp = input_date.strftime("%m/%d/%Y")
+    
+    with st.spinner("Compiling..."):
+        dynamic_pdf_content = generate_pdf_content(input_fields, date_stamp, author_stamp)
         
-        with st.spinner("Compiling..."):
-            content_data = parse_raw_dump(raw_input, date_stamp, author_stamp)
-            
-            img_html = []
-            if uploaded_images:
-                img_html.append('<div class="section-title">Visual Layout Reference Attachments</div>')
-                img_html.append('<table class="image-grid">')
-                for i in range(0, len(uploaded_images), 2):
-                    img_html.append('<tr>')
-                    img1 = uploaded_images[i]
-                    img1.seek(0)
-                    b64_1 = base64.b64encode(img1.read()).decode()
-                    img_html.append(f'<td><img class="embedded-img" src="data:{img1.type};base64,{b64_1}"><div class="image-grid-caption">Figure {i+1}: {img1.name}</div></td>')
-                    
-                    if i + 1 < len(uploaded_images):
-                        img2 = uploaded_images[i+1]
-                        img2.seek(0)
-                        b64_2 = base64.b64encode(img2.read()).decode()
-                        img_html.append(f'<td><img class="embedded-img" src="data:{img2.type};base64,{b64_2}"><div class="image-grid-caption">Figure {i+2}: {img2.name}</div></td>')
-                    else:
-                        img_html.append('<td></td>')
-                    img_html.append('</tr>')
-                img_html.append('</table>')
-            
-            final_html = HTML_TEMPLATE.format(
-                doc_title=input_doc_title,
-                template_num=input_template_num,
-                purpose=input_purpose,
-                dynamic_content=content_data["dynamic_content"],
-                image_content="".join(img_html)
+        img_html = []
+        if uploaded_images:
+            img_html.append('<div class="section-title">Visual Layout Reference Attachments</div>')
+            img_html.append('<table class="image-grid">')
+            for i in range(0, len(uploaded_images), 2):
+                img_html.append('<tr>')
+                img1 = uploaded_images[i]
+                img1.seek(0)
+                b64_1 = base64.b64encode(img1.read()).decode()
+                img_html.append(f'<td><img class="embedded-img" src="data:{img1.type};base64,{b64_1}"><div class="image-grid-caption">Figure {i+1}: {img1.name}</div></td>')
+                
+                if i + 1 < len(uploaded_images):
+                    img2 = uploaded_images[i+1]
+                    img2.seek(0)
+                    b64_2 = base64.b64encode(img2.read()).decode()
+                    img_html.append(f'<td><img class="embedded-img" src="data:{img2.type};base64,{b64_2}"><div class="image-grid-caption">Figure {i+2}: {img2.name}</div></td>')
+                else:
+                    img_html.append('<td></td>')
+                img_html.append('</tr>')
+            img_html.append('</table>')
+        
+        final_html = HTML_TEMPLATE.format(
+            doc_title=input_doc_title,
+            template_num=input_template_num,
+            purpose=input_purpose,
+            dynamic_content=dynamic_pdf_content,
+            image_content="".join(img_html)
+        )
+        
+        pdf_buffer = BytesIO()
+        pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
+        
+        if not pisa_status.err:
+            st.success("Compilation complete.")
+            st.download_button(
+                label="Download Production PDF",
+                data=pdf_buffer.getvalue(),
+                file_name="Compiled_Specification.pdf",
+                mime="application/pdf",
+                use_container_width=True
             )
-            
-            pdf_buffer = BytesIO()
-            pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
-            
-            if not pisa_status.err:
-                st.success("Compilation complete.")
-                st.download_button(
-                    label="Download Production PDF",
-                    data=pdf_buffer.getvalue(),
-                    file_name="Compiled_Specification.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-            else:
-                st.error("Error formatting PDF.")
+        else:
+            st.error("Error formatting PDF.")
