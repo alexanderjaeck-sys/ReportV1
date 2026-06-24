@@ -329,7 +329,7 @@ def parse_raw_dump(raw_text, user_date, user_author):
 # --- MINIMAL NATIVE STREAMLIT UI DESIGN ---
 st.set_page_config(page_title="Document Compiler", layout="centered")
 
-st.title("Secure Document Compiler")
+st.title("Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
