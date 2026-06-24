@@ -5,7 +5,7 @@ from xhtml2pdf import pisa
 from io import BytesIO
 from datetime import date
 
-# --- NEW REINFORCED EXECUTIVE PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- FIXED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -15,12 +15,6 @@ HTML_TEMPLATE = """
     @page {{
         size: letter;
         margin: 0.5in 0.5in 0.6in 0.5in;
-        @bottom-right {{
-            content: "Page " counter(page);
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 8pt;
-            color: #94a3b8;
-        }}
     }}
     body {{
         font-family: Helvetica, Arial, sans-serif;
@@ -126,6 +120,12 @@ HTML_TEMPLATE = """
         color: #64748b;
         font-weight: bold;
     }}
+    .footer-container {{
+        text-align: right;
+        font-size: 8pt;
+        color: #94a3b8;
+        margin-top: 20px;
+    }}
 </style>
 </head>
 <body>
@@ -149,19 +149,22 @@ HTML_TEMPLATE = """
     </table>
     
     {dynamic_content}
+
+    <div class="footer-container">
+        Page <pdf:pagenumber />
+    </div>
 </body>
 </html>
 """
 
 def format_text_block(text_value):
-    """Converts plain text raw newlines into valid, tightly tracked PDF structural blocks."""
     lines = text_value.strip().split('\n')
     html_lines = []
     for line in lines:
         if line.strip():
             html_lines.append(f'<div class="text-line">{line}</div>')
         else:
-            html_lines.append('<div style="height: 6px;"></div>') # Preserves structural intent spacing
+            html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
 def generate_pdf_content(fields, images_list):
@@ -175,7 +178,6 @@ def generate_pdf_content(fields, images_list):
     for header, value in fields.items():
         val_clean = value.strip()
         
-        # Section 8 Visuals Assignment Split Handler
         if header == "8. Visuals / Screenshots":
             if not val_clean and not images_list:
                 continue
@@ -210,7 +212,6 @@ def generate_pdf_content(fields, images_list):
         if not val_clean:
             continue
             
-        # Clean up section numbering strings seamlessly
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
         
         html_output.append('<div class="section-container">')
@@ -224,7 +225,6 @@ def generate_pdf_content(fields, images_list):
                 if not block.strip():
                     continue
                 
-                # Check for standard dividers
                 if ":" in block:
                     parts = block.split(":", 1)
                     key = parts[0].strip()
@@ -233,9 +233,7 @@ def generate_pdf_content(fields, images_list):
                     key = "Action Step"
                     val = block.strip()
                 
-                # Clean up decorative array bullets if present
                 key = re.sub(r'^[\-\*\s\•]+', '', key)
-                
                 html_output.append(f'<tr><td class="table-key">{key}</td><td>{val if val else " "}</td></tr>')
             html_output.append('</table>')
         else:
@@ -252,7 +250,6 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# GLOBAL METADATA CONTROL
 st.markdown("#### 📓 Global Metadata Properties")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., WI_010_Sandia-3A1488Headers_Rev1.0")
 
@@ -272,7 +269,6 @@ input_purpose = st.text_area(
 
 st.divider()
 
-# --- WORKSPACE ENTRY MATRIX ---
 st.markdown("#### 📋 Instruction Framework Categories")
 st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
 
