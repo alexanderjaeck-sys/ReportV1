@@ -114,9 +114,9 @@ HTML_TEMPLATE = """
     }}
     table.matrix-table td {{
         border: 1px solid #939598;
-        padding: 14px 12px; /* Increased vertical padding to make room for manual entry writing */
+        padding: 9px 12px;
         font-size: 9.5pt;
-        vertical-align: middle;
+        vertical-align: top;
         color: #414042;
     }}
     table.matrix-table tr:nth-child(even) td {{
@@ -125,7 +125,7 @@ HTML_TEMPLATE = """
     .table-key {{
         font-weight: bold;
         color: #E31E24;
-        width: 25%;
+        width: 20%;
     }}
     .image-grid {{
         width: 100%;
@@ -239,7 +239,7 @@ def generate_pdf_content(fields, images_list):
             
             for block in val_clean.split('\n'):
                 if not block.strip(): continue
-                # Lines containing colons are identified as table step hooks
+                # Identify step hooks by checking for colons
                 if ":" in block and not block.strip().startswith(("http:", "https:")):
                     matrix_lines.append(block)
                 else:
@@ -254,9 +254,21 @@ def generate_pdf_content(fields, images_list):
             if matrix_lines:
                 html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
                 step_counter = 1
-                for _ in matrix_lines:
-                    # Dynamically creates sequential empty steps for the physical worksheet
-                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td> </td></tr>')
+                for block in matrix_lines:
+                    parts = block.split(":", 1)
+                    key = parts[0].strip()
+                    detail_content = parts[1].strip() if len(parts) > 1 else ""
+                    
+                    # Strip any user-typed dash or bullet markers out cleanly
+                    key = re.sub(r'^[\-\*\s\•]+', '', key)
+                    
+                    # Combine key name and details cleanly if a descriptive label was used
+                    if key.lower() not in [f"step {i}" for i in range(1, 100)] and key.lower() != "step":
+                        full_detail = f"<strong>{key}:</strong> {detail_content}" if detail_content else key
+                    else:
+                        full_detail = detail_content
+                        
+                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td>{full_detail if full_detail else " "}</td></tr>')
                     step_counter += 1
                 html_output.append('</table>')
         else:
@@ -308,10 +320,10 @@ fields["2. Purpose"] = st.text_area("2. Purpose:", height=65)
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
 
-# Simplistic layout tracking instruction tips
-fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Each line with a colon adds an empty step to the sheet):", value="This section describes the primary configuration step sequencing.\nStep 1:\nStep 2:\nStep 3:", height=120)
+# Custom initial structures for cleaner table input demonstration
+fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Format lines as 'Label: Your instruction content'):", value="This section describes the primary configuration step sequencing.\nWork Ticket Number: Verify work ticket match to traveler documentation.\nPart Number: Confirm physical part matches current revision level.\nSerial Number: Log unique components on tracking log.", height=120)
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
-fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Each line with a colon adds an empty step to the sheet):", value="Follow the database logging structures listed below:\nStep 1:\nStep 2:\nStep 3:\nStep 4:", height=150)
+fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Format lines as 'Label: Your instruction content'):", value="Follow the database logging structures listed below:\nControls Tab: Enter primary program telemetry fields.\nCustomer: Select explicit customer destination endpoint.\nNotes: Record any baseline calibration adjustments here.", height=150)
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
