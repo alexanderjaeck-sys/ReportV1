@@ -250,7 +250,7 @@ def generate_pdf_content(fields, images_list):
     return "".join(html_output)
 
 # --- STREAMLIT UI DESIGN ---
-st.set_page_config(page_title="AIS | PQI Work Instruction Generator", layout="centered")
+st.set_page_config(page_title="AIS | Work Instruction Generator", layout="centered")
 
 # Injection of AIS Red and Grey Brand Colors into the App UI
 st.markdown(f"""
