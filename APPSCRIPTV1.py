@@ -58,7 +58,7 @@ HTML_TEMPLATE = """
     .content-block {{
         margin-bottom: 12px;
         color: #475569;
-        white-space: pre-wrap; /* Preserves manual enter spacing */
+        white-space: pre-wrap;
     }}
     table.matrix-table {{
         width: 100%;
@@ -94,8 +94,8 @@ HTML_TEMPLATE = """
     }}
     .image-grid {{
         width: 100%;
-        margin-top: 20px;
-        margin-bottom: 20px;
+        margin-top: 15px;
+        margin-bottom: 15px;
     }}
     .image-grid td {{
         width: 50%;
@@ -136,7 +136,6 @@ HTML_TEMPLATE = """
         </tr>
     </table>
     {dynamic_content}
-    {image_content}
     <div class="footer-container">
         Document Page <pdf:pagenumber />
     </div>
@@ -144,28 +143,60 @@ HTML_TEMPLATE = """
 </html>
 """
 
-def generate_pdf_content(fields, user_date, user_author):
+def generate_pdf_content(fields, user_date, user_author, images_list):
     html_output = []
     
-    # Define structural categories that need rendering as key-value metric tables
     table_based_categories = [
         "5. Procedure: VCMM/CMM Inspection", 
         "7. Procedure: Data Reporting"
     ]
     
     for header, value in fields.items():
-        # Clean the string formatting values
         val_clean = value.strip()
+        
+        # SPECIAL BEHAVIOR: Handle Visuals/Screenshots mapping slot uniquely
+        if header == "8. Visuals / Screenshots":
+            # Only render this category if text exists OR images were explicitly uploaded
+            if not val_clean and not images_list:
+                continue
+                
+            clean_title = "Visuals / Screenshots"
+            html_output.append(f'<div class="section-title">{clean_title}</div>')
+            
+            # Print the text if there is any
+            if val_clean:
+                html_output.append(f'<div class="content-block">{val_clean}</div>')
+            
+            # Process and loop layout attachment tables directly in this section space
+            if images_list:
+                html_output.append('<table class="image-grid">')
+                for i in range(0, len(images_list), 2):
+                    html_output.append('<tr>')
+                    img1 = images_list[i]
+                    img1.seek(0)
+                    b64_1 = base64.b64encode(img1.read()).decode()
+                    html_output.append(f'<td><img class="embedded-img" src="data:{img1.type};base64,{b64_1}"><div class="image-grid-caption">Figure {i+1}: {img1.name}</div></td>')
+                    
+                    if i + 1 < len(images_list):
+                        img2 = images_list[i+1]
+                        img2.seek(0)
+                        b64_2 = base64.b64encode(img2.read()).decode()
+                        html_output.append(f'<td><img class="embedded-img" src="data:{img2.type};base64,{b64_2}"><div class="image-grid-caption">Figure {i+2}: {img2.name}</div></td>')
+                    else:
+                        html_output.append('<td></td>')
+                    html_output.append('</tr>')
+                html_output.append('</table>')
+            continue
+
+        # Standard Field Defensive Empty Processing Checks
         if not val_clean:
-            continue # Skip rendering this section entirely if left completely blank
+            continue
             
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
         html_output.append(f'<div class="section-title">{clean_title}</div>')
         
-        # Determine layout approach based on data category classification
         if header in table_based_categories:
             html_output.append('<table class="matrix-table"><tr><th style="width:35%;">Element / Tab Mapping</th><th>Instruction / Action Block</th></tr>')
-            
             for block in val_clean.split('\n'):
                 if not block.strip():
                     continue
@@ -174,13 +205,11 @@ def generate_pdf_content(fields, user_date, user_author):
                 key = parts[0].strip()
                 val = parts[1].strip() if len(parts) > 1 else " "
                 html_output.append(f'<tr><td class="table-key">{key}</td><td>{val}</td></tr>')
-                
             html_output.append('</table>')
         else:
-            # Standard structural narrative printing block
             html_output.append(f'<div class="content-block">{val_clean}</div>')
             
-    # Always append the structural Revision Control box at the base
+    # Native Tracking History Table Core Element
     html_output.append('<div class="section-title">Revision Control History</div>')
     html_output.append('<table class="matrix-table">')
     html_output.append('<tr><th>Rev</th><th>Date</th><th>Changes Logged</th><th>Author</th></tr>')
@@ -196,7 +225,7 @@ st.title("PQI Work Instruction Generator")
 st.text("Advanced Inspection Services | Controlled Production Requirements")
 st.divider()
 
-# Global Document Control Configuration Headers Block
+# Global Document Data Matrix Property Blocks
 st.markdown("#### 📓 Global Metadata Properties")
 input_doc_title = st.text_input("Document Title:", value="WI_010_Sandia-3A1488Headers_Rev1.0")
 
@@ -214,11 +243,10 @@ input_purpose = st.text_area(
 
 st.divider()
 
-# --- STANDALONE INPUT BOX GRID FOR INDIVIDUAL CRITERIA ---
+# --- STANDALONE FIELDS COMPLIANCE OBJECT MATRIX ---
 st.markdown("#### 📋 Instruction Framework Categories")
 st.caption("Fields left completely blank will automatically hide themselves from generating inside the final PDF document structure.")
 
-# Initializing each criteria element cleanly with custom heights
 input_fields = {}
 
 input_fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=70)
@@ -228,22 +256,27 @@ input_fields["4. Required Tools / Software / Materials"] = st.text_area("4. Requ
 input_fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM Inspection (Use 'Key: Value' layout for clean metric matrix printing):", value="- Work Ticket Number:\n- Part Number:\n- Serial Number:", height=120)
 input_fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=110)
 input_fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Use 'Key: Value' layout for clean metric matrix printing):", value="- Controls Tab:\n- Customer:\n- Part data:\n- Additional Data:\n- Primary Inspector:\n- Notes:\n- Cert_Uncert:\n- Comments Pg:\n- Equip List:\n- Report-V:\n- Report Pictures:", height=260)
-input_fields["8. Visuals / Screenshots"] = st.text_area("8. Visuals / Screenshots:", height=80)
+
+# Custom Section Container for the explicit Visuals element tracking target box rules
+st.markdown("---")
+st.markdown("##### 🖼️ Section 8 Configuration Hub")
+input_fields["8. Visuals / Screenshots"] = st.text_area("8. Visuals / Screenshots Narrative Notes (Optional):", height=80)
+uploaded_images = st.file_uploader(
+    "Upload reference figures specifically for Section 8 (JPG/PNG):", 
+    accept_multiple_files=True, 
+    type=["jpg", "png", "jpeg"]
+)
+st.markdown("---")
+
 input_fields["9. Safety / Precautions"] = st.text_area("9. Safety / Precautions:", height=100)
 input_fields["10. Troubleshooting / Notes"] = st.text_area("10. Troubleshooting / Notes:", height=100)
 input_fields["11. Compliance"] = st.text_area("11. Compliance:", height=100)
 
 st.divider()
 
-col_date, col_upload, col_btn = st.columns([1, 1, 1])
+col_date, col_spacer, col_btn = st.columns([1, 1, 1])
 with col_date:
     input_date = st.date_input("Tracking Date:", date.today())
-with col_upload:
-    uploaded_images = st.file_uploader(
-        "Upload reference figures:", 
-        accept_multiple_files=True, 
-        type=["jpg", "png", "jpeg"]
-    )
 with col_btn:
     st.write(" ")
     st.write(" ")
@@ -254,35 +287,13 @@ if compile_button:
     date_stamp = input_date.strftime("%m/%d/%Y")
     
     with st.spinner("Compiling..."):
-        dynamic_pdf_content = generate_pdf_content(input_fields, date_stamp, author_stamp)
-        
-        img_html = []
-        if uploaded_images:
-            img_html.append('<div class="section-title">Visual Layout Reference Attachments</div>')
-            img_html.append('<table class="image-grid">')
-            for i in range(0, len(uploaded_images), 2):
-                img_html.append('<tr>')
-                img1 = uploaded_images[i]
-                img1.seek(0)
-                b64_1 = base64.b64encode(img1.read()).decode()
-                img_html.append(f'<td><img class="embedded-img" src="data:{img1.type};base64,{b64_1}"><div class="image-grid-caption">Figure {i+1}: {img1.name}</div></td>')
-                
-                if i + 1 < len(uploaded_images):
-                    img2 = uploaded_images[i+1]
-                    img2.seek(0)
-                    b64_2 = base64.b64encode(img2.read()).decode()
-                    img_html.append(f'<td><img class="embedded-img" src="data:{img2.type};base64,{b64_2}"><div class="image-grid-caption">Figure {i+2}: {img2.name}</div></td>')
-                else:
-                    img_html.append('<td></td>')
-                img_html.append('</tr>')
-            img_html.append('</table>')
+        dynamic_pdf_content = generate_pdf_content(input_fields, date_stamp, author_stamp, uploaded_images)
         
         final_html = HTML_TEMPLATE.format(
             doc_title=input_doc_title,
             template_num=input_template_num,
             purpose=input_purpose,
-            dynamic_content=dynamic_pdf_content,
-            image_content="".join(img_html)
+            dynamic_content=dynamic_pdf_content
         )
         
         pdf_buffer = BytesIO()
