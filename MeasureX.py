@@ -18,7 +18,7 @@ def pdf_to_pure_latex(pdf_path, output_tex_path):
     
     print("Processing document layout and generating LaTeX code...")
     response = client.models.generate_content(
-        model="gemini-2.5-pro",
+        model="gemini-2.5-flash",
         contents=[uploaded_file, prompt]
     )
     
