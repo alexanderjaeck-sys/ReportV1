@@ -81,7 +81,7 @@ HTML_TEMPLATE = """
     .section-container {{
         margin-top: 15px;
         margin-bottom: 5px;
-        page-break-inside: avoid; /* Keeps narrative lists intact on one page */
+        page-break-inside: avoid;
     }}
     .section-title {{
         color: #000000;
@@ -127,7 +127,7 @@ HTML_TEMPLATE = """
         border: 1px solid #414042;
     }}
     table.matrix-table tr {{
-        page-break-inside: avoid; /* Prevents cell rows from tearing across pages */
+        page-break-inside: avoid;
     }}
     table.matrix-table td {{
         border: 1px solid #939598;
@@ -149,7 +149,7 @@ HTML_TEMPLATE = """
         text-align: left;
     }}
     .step-img {{
-        width: 250px;
+        width: 200px;
         height: auto;
         border: 1px solid #cbd5e1;
     }}
@@ -227,16 +227,18 @@ HTML_TEMPLATE = """
 """
 
 def format_as_html_bullets(text_value):
-    """Converts multi-line narrative blocks into clean HTML list items."""
+    """Converts mixed user entries safely into clean HTML list items."""
     lines = text_value.strip().split('\n')
     bullet_items = []
     for line in lines:
         clean_line = line.strip()
         if not clean_line:
             continue
-        # Clean up any typed structural bullet markers (-, *, a., b., etc.)
+            
         clean_line = re.sub(r'^[\-\*\•\s]+', '', clean_line)
-        clean_line = re.sub(r'^[a-zA-Z0-9]+\.\s*', '', clean_line)
+        clean_line = re.sub(r'^(?i)(?:section|sec|step)?\s*[a-zA-Z0-9]+\s*[\.\-\:]\s*', '', clean_line)
+        clean_line = clean_line.strip()
+        
         if clean_line:
             bullet_items.append(f'<li class="pdf-li">{clean_line}</li>')
             
@@ -247,18 +249,22 @@ def format_as_html_bullets(text_value):
 def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
     html_output = []
     
-    # 1. Process narrative items that convert directly to bullet lists
-    bullet_sections = {
-        "1. WI Template Number": "Template Number",
-        "2. Responsibilities": "Responsibilities",
-        "3. Required Tools": "Required Tools"
-    }
-    for field_key, display_title in bullet_sections.items():
-        if field_key in fields and fields[field_key].strip():
-            html_output.append(f'<div class="section-container"><div class="section-title">{display_title}</div>')
-            html_output.append(f'<div class="content-block">{format_as_html_bullets(fields[field_key])}</div></div>')
-            
-    # 2. Process Section 4 (Dynamic Procedure Table)
+    # 1. Section 1: Template Number
+    if fields.get("1. WI Template Number", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Template Number</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["1. WI Template Number"])}</div></div>')
+        
+    # 2. Section 2: Responsibilities
+    if fields.get("2. Responsibilities", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Responsibilities</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["2. Responsibilities"])}</div></div>')
+        
+    # 3. Section 3: Required Tools
+    if fields.get("3. Required Tools", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Required Tools</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["3. Required Tools"])}</div></div>')
+        
+    # 4. Section 4: VCMM/CMM Inspection (Table Format)
     if steps_4:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: VCMM/CMM Inspection</div>')
         html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
@@ -274,12 +280,12 @@ def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
             html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
         html_output.append('</table></div>')
         
-    # 3. Process Section 5 (Visual Narrative List)
-    if "5. Procedure: Visual Inspection" in fields and fields["5. Procedure: Visual Inspection"].strip():
+    # 5. Section 5: Visual Inspection (Bullet Format)
+    if fields.get("5. Procedure: Visual Inspection", "").strip():
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Visual Inspection</div>')
         html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["5. Procedure: Visual Inspection"])}</div></div>')
         
-    # 4. Process Section 6 (Dynamic Procedure Table)
+    # 6. Section 6: Data Reporting (Table Format)
     if steps_6:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Data Reporting</div>')
         html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
@@ -295,8 +301,8 @@ def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
             html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
         html_output.append('</table></div>')
         
-    # 5. Process Section 7 (Visuals/Screenshots Attachments Grid)
-    if "7. Visuals / Screenshots" in fields or images_list:
+    # 7. Section 7: Visuals / Screenshots (Grid Format)
+    if fields.get("7. Visuals / Screenshots", "").strip() or images_list:
         val_clean = fields.get("7. Visuals / Screenshots", "").strip()
         html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
         if val_clean: 
@@ -319,16 +325,20 @@ def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
             html_output.append('</table>')
         html_output.append('</div>')
         
-    # 6. Process Footer narrative items as bullet lists
-    footer_bullet_sections = {
-        "8. Safety / Precautions": "Safety / Precautions",
-        "9. Troubleshooting": "Notes / Troubleshooting",
-        "10. Compliance": "Compliance"
-    }
-    for field_key, display_title in footer_bullet_sections.items():
-        if field_key in fields and fields[field_key].strip():
-            html_output.append(f'<div class="section-container"><div class="section-title">{display_title}</div>')
-            html_output.append(f'<div class="content-block">{format_as_html_bullets(fields[field_key])}</div></div>')
+    # 8. Section 8: Safety / Precautions
+    if fields.get("8. Safety / Precautions", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Safety / Precautions</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["8. Safety / Precautions"])}</div></div>')
+        
+    # 9. Section 9: Notes / Troubleshooting
+    if fields.get("9. Troubleshooting", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Notes / Troubleshooting</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["9. Troubleshooting"])}</div></div>')
+        
+    # 10. Section 10: Compliance
+    if fields.get("10. Compliance", "").strip():
+        html_output.append('<div class="section-container"><div class="section-title">Compliance</div>')
+        html_output.append(f'<div class="content-block">{format_as_html_bullets(fields["10. Compliance"])}</div></div>')
             
     return "".join(html_output)
 
@@ -377,8 +387,6 @@ st.divider()
 st.markdown("#### 📋 Framework Categories")
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-
-# NUMBER SEQUENCE FIXED: 1 -> 2 -> 3 now scales continuously
 fields["2. Responsibilities"] = st.text_area("2. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["3. Required Tools"] = st.text_area("3. Required Tools:", height=80)
 
@@ -470,8 +478,3 @@ if compile_button:
             purpose=input_purpose if input_purpose.strip() else " ",
             dynamic_content=dynamic_content
         )
-        
-        pdf_buffer = BytesIO()
-        pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
-        st.success("AIS Branded Report Ready!")
-        st.download_button("📥 DOWNLOAD PDF", data=pdf_buffer.getvalue(), file_name="AIS_Work_Instruction.pdf", mime="application/pdf", use_container_width=True)
