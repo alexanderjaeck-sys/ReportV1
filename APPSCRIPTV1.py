@@ -127,13 +127,22 @@ HTML_TEMPLATE = """
         color: #E31E24;
         width: 20%;
     }}
+    .step-img-container {{
+        margin-top: 6px;
+        text-align: left;
+    }}
+    .step-img {{
+        width: 220px;
+        height: auto;
+        border: 1px solid #cbd5e1;
+    }}
     .image-grid {{
         width: 100%;
         margin-top: 10px;
     }}
     .image-grid td {{
         width: 50%;
-        padding: 8px;
+        padding: 6px;
         text-align: center;
         vertical-align: top;
     }}
@@ -206,7 +215,7 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list, image_captions):
+def generate_pdf_content(fields, images_list, image_captions, step_images):
     html_output = []
     table_based_categories = ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]
     
@@ -227,11 +236,8 @@ def generate_pdf_content(fields, images_list, image_captions):
                             img = images_list[i+j]
                             img.seek(0)
                             b64 = base64.b64encode(img.read()).decode()
-                            
-                            # Fetch custom matching caption input text safely
                             custom_caption = image_captions.get(img.name, "").strip()
                             display_caption = f"Figure {i+j+1}: {custom_caption}" if custom_caption else f"Figure {i+j+1}: {img.name}"
-                            
                             html_output.append(f'<td><img class="embedded-img-frame" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">{display_caption}</div></td>')
                         else:
                             html_output.append('<td></td>')
@@ -271,8 +277,17 @@ def generate_pdf_content(fields, images_list, image_captions):
                         full_detail = f"<strong>{key}:</strong> {detail_content}" if detail_content else key
                     else:
                         full_detail = detail_content
-                        
-                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td>{full_detail if full_detail else " "}</td></tr>')
+                    
+                    # Embed step-specific uploaded images if they exist
+                    step_img_key = f"{header}_step_{step_counter}"
+                    step_img_html = ""
+                    if step_img_key in step_images and step_images[step_img_key] is not None:
+                        s_img = step_images[step_img_key]
+                        s_img.seek(0)
+                        s_b64 = base64.b64encode(s_img.read()).decode()
+                        step_img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{s_img.type};base64,{s_b64}"></div>'
+                    
+                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td>{full_detail if full_detail else " "}{step_img_html}</td></tr>')
                     step_counter += 1
                 html_output.append('</table>')
         else:
@@ -314,8 +329,6 @@ col_l, col_m, col_r = st.columns(3)
 with col_l: input_template_num = st.text_input("Template #:", placeholder="e.g., TMP-002")
 with col_m: input_date = st.date_input("Date:", date.today())
 with col_r: input_author = st.text_input("Author:", placeholder="Initials/Name")
-
-# REMOVED DUPED PURPOSE: This main scope area stays completely intact and anchors the header data
 input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the document scope...", height=70)
 
 st.divider()
@@ -324,27 +337,54 @@ st.divider()
 st.markdown("#### 📋 Framework Categories")
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-
-# REDUNDANCY FIXED: Removed old "2. Purpose" text area box from the main checklist to avoid copy-pasting
-
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
+
+# Main procedure inputs
 fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Format lines as 'Label: Your instruction content'):", value="This section describes the primary configuration step sequencing.\nWork Ticket Number: Verify work ticket match to traveler documentation.\nPart Number: Confirm physical part matches current revision level.\nSerial Number: Log unique components on tracking log.", height=120)
+
+# Step Image Tracker Dictionary
+step_images = {}
+
+# Dynamically generate "Add Image" option controls for Section 5 steps
+vcmm_lines = [b for b in fields["5. Procedure: VCMM/CMM Inspection"].split('\n') if b.strip() and ":" in b and not b.strip().startswith(("http:", "https:"))]
+if vcmm_lines:
+    with st.expander("📸 Attach Images directly to Section 5 Steps"):
+        for idx, line in enumerate(vcmm_lines):
+            step_num = idx + 1
+            step_label = line.split(":", 1)[0].strip()
+            step_images[f"5. Procedure: VCMM/CMM Inspection_step_{step_num}"] = st.file_uploader(
+                f"Image for Step {step_num} ({step_label}):", 
+                type=["png", "jpg", "jpeg"], 
+                key=f"img_vcmm_{step_num}"
+            )
+
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
 fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Format lines as 'Label: Your instruction content'):", value="Follow the database logging structures listed below:\nControls Tab: Enter primary program telemetry fields.\nCustomer: Select explicit customer destination endpoint.\nNotes: Record any baseline calibration adjustments here.", height=150)
+
+# Dynamically generate "Add Image" option controls for Section 7 steps
+reporting_lines = [b for b in fields["7. Procedure: Data Reporting"].split('\n') if b.strip() and ":" in b and not b.strip().startswith(("http:", "https:"))]
+if reporting_lines:
+    with st.expander("📸 Attach Images directly to Section 7 Steps"):
+        for idx, line in enumerate(reporting_lines):
+            step_num = idx + 1
+            step_label = line.split(":", 1)[0].strip()
+            step_images[f"5. Procedure: VCMM/CMM Inspection_step_{step_num}" if "5. Procedure" in line else f"7. Procedure: Data Reporting_step_{step_num}"] = st.file_uploader(
+                f"Image for Step {step_num} ({step_label}):", 
+                type=["png", "jpg", "jpeg"], 
+                key=f"img_report_{step_num}"
+            )
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
 fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 8:", height=70)
-
 uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
-# DYNAMIC CAPTION TEXT BOXES: Generate one text field per uploaded screenshot
 image_captions = {}
 if uploaded_images:
     st.markdown("###### 📝 Figure Description Captions")
-    for img in uploaded_images:
-        image_captions[img.name] = st.text_input(f"Description for figure ({img.name}):", key=f"cap_{img.name}", placeholder="e.g., Highlighted alignment pin verification vector.")
+    for idx, img in enumerate(uploaded_images):
+        image_captions[img.name] = st.text_input(f"Description for figure ({img.name}):", key=f"cap_{idx}_{img.name}", placeholder="e.g., Highlighted alignment pin verification vector.")
 
 st.markdown("---")
 
@@ -359,7 +399,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, step_images)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
