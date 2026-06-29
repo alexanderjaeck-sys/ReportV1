@@ -232,8 +232,8 @@ def format_text_block(text_value):
 def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
     html_output = []
     
-    # Process regular string inputs (1, 3, 4)
-    for h_key in ["1. WI Template Number", "3. Responsibilities", "4. Required Tools"]:
+    # Process regular string inputs (Mapped directly to keys used in layout block below)
+    for h_key in ["1. WI Template Number", "2. Responsibilities", "3. Required Tools"]:
         if h_key in fields and fields[h_key].strip():
             clean_title = re.sub(r'^\d+\.\s*', '', h_key).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
@@ -350,13 +350,14 @@ input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the documen
 
 st.divider()
 
-# Instructions Sections (UI CLEANED: Standardized header levels and clear input labels)
 st.markdown("#### 📋 Framework Categories")
 
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
-fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
+
+# FIXED UI LABELS: Continuous, clean tracking sequential strings
+fields["2. Responsibilities"] = st.text_area("2. Responsibilities:", value="a. Users:\nb. Management:", height=80)
+fields["3. Required Tools"] = st.text_area("3. Required Tools:", height=80)
 
 st.divider()
 
