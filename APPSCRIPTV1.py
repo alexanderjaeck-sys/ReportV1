@@ -133,20 +133,24 @@ HTML_TEMPLATE = """
     }}
     .image-grid td {{
         width: 50%;
-        padding: 6px;
+        padding: 8px;
         text-align: center;
         vertical-align: top;
     }}
-    .embedded-img {{
-        width: 280px;
-        height: auto;
-        border: 1px solid #939598;
-        margin-bottom: 4px;
+    .embedded-img-frame {{
+        width: 260px;
+        height: 165px;
+        object-fit: contain;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        margin-bottom: 6px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
-        color: #939598;
+        color: #414042;
         font-weight: bold;
+        margin-top: 2px;
+        line-height: 1.3;
     }}
     .footer-container {{
         text-align: right;
@@ -202,7 +206,7 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list):
+def generate_pdf_content(fields, images_list, image_captions):
     html_output = []
     table_based_categories = ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]
     
@@ -213,6 +217,7 @@ def generate_pdf_content(fields, images_list):
             if not val_clean and not images_list: continue
             html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
             if val_clean: html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
+            
             if images_list:
                 html_output.append('<table class="image-grid">')
                 for i in range(0, len(images_list), 2):
@@ -222,8 +227,14 @@ def generate_pdf_content(fields, images_list):
                             img = images_list[i+j]
                             img.seek(0)
                             b64 = base64.b64encode(img.read()).decode()
-                            html_output.append(f'<td><img class="embedded-img" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">Figure {i+j+1}: {img.name}</div></td>')
-                        else: html_output.append('<td></td>')
+                            
+                            # Fetch custom matching caption input text safely
+                            custom_caption = image_captions.get(img.name, "").strip()
+                            display_caption = f"Figure {i+j+1}: {custom_caption}" if custom_caption else f"Figure {i+j+1}: {img.name}"
+                            
+                            html_output.append(f'<td><img class="embedded-img-frame" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">{display_caption}</div></td>')
+                        else:
+                            html_output.append('<td></td>')
                     html_output.append('</tr>')
                 html_output.append('</table>')
             html_output.append('</div>')
@@ -236,17 +247,13 @@ def generate_pdf_content(fields, images_list):
         if header in table_based_categories:
             plain_lines = []
             matrix_lines = []
-            
             for block in val_clean.split('\n'):
                 if not block.strip(): continue
-                # Identify step hooks by checking for colons
                 if ":" in block and not block.strip().startswith(("http:", "https:")):
                     matrix_lines.append(block)
                 else:
-                    if not matrix_lines:
-                        plain_lines.append(block)
-                    else:
-                        matrix_lines.append(block)
+                    if not matrix_lines: plain_lines.append(block)
+                    else: matrix_lines.append(block)
             
             if plain_lines:
                 html_output.append(f'<div class="content-block">{"".join([f"<div class=\'text-line\'>{l}</div>" for l in plain_lines])}</div>')
@@ -258,11 +265,8 @@ def generate_pdf_content(fields, images_list):
                     parts = block.split(":", 1)
                     key = parts[0].strip()
                     detail_content = parts[1].strip() if len(parts) > 1 else ""
-                    
-                    # Strip any user-typed dash or bullet markers out cleanly
                     key = re.sub(r'^[\-\*\s\•]+', '', key)
                     
-                    # Combine key name and details cleanly if a descriptive label was used
                     if key.lower() not in [f"step {i}" for i in range(1, 100)] and key.lower() != "step":
                         full_detail = f"<strong>{key}:</strong> {detail_content}" if detail_content else key
                     else:
@@ -303,24 +307,28 @@ st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
+# Metadata Section
 st.markdown("#### 📓 Document Metadata")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., Sandia-3A1488-01")
 col_l, col_m, col_r = st.columns(3)
 with col_l: input_template_num = st.text_input("Template #:", placeholder="e.g., TMP-002")
 with col_m: input_date = st.date_input("Date:", date.today())
 with col_r: input_author = st.text_input("Author:", placeholder="Initials/Name")
+
+# REMOVED DUPED PURPOSE: This main scope area stays completely intact and anchors the header data
 input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the document scope...", height=70)
 
 st.divider()
 
+# Instructions Sections
 st.markdown("#### 📋 Framework Categories")
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-fields["2. Purpose"] = st.text_area("2. Purpose:", height=65)
+
+# REDUNDANCY FIXED: Removed old "2. Purpose" text area box from the main checklist to avoid copy-pasting
+
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
-
-# Custom initial structures for cleaner table input demonstration
 fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Format lines as 'Label: Your instruction content'):", value="This section describes the primary configuration step sequencing.\nWork Ticket Number: Verify work ticket match to traveler documentation.\nPart Number: Confirm physical part matches current revision level.\nSerial Number: Log unique components on tracking log.", height=120)
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
 fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Format lines as 'Label: Your instruction content'):", value="Follow the database logging structures listed below:\nControls Tab: Enter primary program telemetry fields.\nCustomer: Select explicit customer destination endpoint.\nNotes: Record any baseline calibration adjustments here.", height=150)
@@ -328,7 +336,16 @@ fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Report
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
 fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 8:", height=70)
+
 uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
+
+# DYNAMIC CAPTION TEXT BOXES: Generate one text field per uploaded screenshot
+image_captions = {}
+if uploaded_images:
+    st.markdown("###### 📝 Figure Description Captions")
+    for img in uploaded_images:
+        image_captions[img.name] = st.text_input(f"Description for figure ({img.name}):", key=f"cap_{img.name}", placeholder="e.g., Highlighted alignment pin verification vector.")
+
 st.markdown("---")
 
 fields["9. Safety / Precautions"] = st.text_area("9. Safety:", height=80)
@@ -342,7 +359,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
