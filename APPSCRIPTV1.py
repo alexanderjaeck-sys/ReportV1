@@ -215,13 +215,36 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list, image_captions, step_images):
+def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data):
     html_output = []
-    table_based_categories = ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]
     
     for header, value in fields.items():
+        if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
+            # Process dynamic list data instead of string parsing
+            steps_list = dynamic_steps_data.get(header, [])
+            if not steps_list: continue
+            
+            clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
+            html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
+            html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
+            
+            for s_idx, step_item in enumerate(steps_list):
+                step_num = s_idx + 1
+                txt_content = step_item["text"].strip()
+                uploaded_file = step_item["image"]
+                
+                step_img_html = ""
+                if uploaded_file is not None:
+                    uploaded_file.seek(0)
+                    s_b64 = base64.b64encode(uploaded_file.read()).decode()
+                    step_img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{uploaded_file.type};base64,{s_b64}"></div>'
+                
+                html_output.append(f'<tr><td class="table-key">Step {step_num}</td><td>{txt_content if txt_content else " "}{step_img_html}</td></tr>')
+                
+            html_output.append('</table></div>')
+            continue
+            
         val_clean = value.strip()
-        
         if header == "8. Visuals / Screenshots":
             if not val_clean and not images_list: continue
             html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
@@ -249,50 +272,8 @@ def generate_pdf_content(fields, images_list, image_captions, step_images):
         if not val_clean: continue
         clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
         html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
+        html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div></div>')
         
-        if header in table_based_categories:
-            plain_lines = []
-            matrix_lines = []
-            for block in val_clean.split('\n'):
-                if not block.strip(): continue
-                if ":" in block and not block.strip().startswith(("http:", "https:")):
-                    matrix_lines.append(block)
-                else:
-                    if not matrix_lines: plain_lines.append(block)
-                    else: matrix_lines.append(block)
-            
-            if plain_lines:
-                html_output.append(f'<div class="content-block">{"".join([f"<div class=\'text-line\'>{l}</div>" for l in plain_lines])}</div>')
-            
-            if matrix_lines:
-                html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
-                step_counter = 1
-                for block in matrix_lines:
-                    parts = block.split(":", 1)
-                    key = parts[0].strip()
-                    detail_content = parts[1].strip() if len(parts) > 1 else ""
-                    key = re.sub(r'^[\-\*\s\•]+', '', key)
-                    
-                    if key.lower() not in [f"step {i}" for i in range(1, 100)] and key.lower() != "step":
-                        full_detail = f"<strong>{key}:</strong> {detail_content}" if detail_content else key
-                    else:
-                        full_detail = detail_content
-                    
-                    # Embed step-specific uploaded images if they exist
-                    step_img_key = f"{header}_step_{step_counter}"
-                    step_img_html = ""
-                    if step_img_key in step_images and step_images[step_img_key] is not None:
-                        s_img = step_images[step_img_key]
-                        s_img.seek(0)
-                        s_b64 = base64.b64encode(s_img.read()).decode()
-                        step_img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{s_img.type};base64,{s_b64}"></div>'
-                    
-                    html_output.append(f'<tr><td class="table-key">Step {step_counter}</td><td>{full_detail if full_detail else " "}{step_img_html}</td></tr>')
-                    step_counter += 1
-                html_output.append('</table>')
-        else:
-            html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
-        html_output.append('</div>')
     return "".join(html_output)
 
 # --- STREAMLIT UI DESIGN ---
@@ -322,6 +303,10 @@ st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
+# Initialization of persistent step counts inside state dictionaries
+if "count_sec5" not in st.session_state: st.session_state.count_sec5 = 1
+if "count_sec7" not in st.session_state: st.session_state.count_sec7 = 1
+
 # Metadata Section
 st.markdown("#### 📓 Document Metadata")
 input_doc_title = st.text_input("Document Title:", placeholder="e.g., Sandia-3A1488-01")
@@ -340,40 +325,52 @@ fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
 
-# Main procedure inputs
-fields["5. Procedure: VCMM/CMM Inspection"] = st.text_area("5. Procedure: VCMM/CMM (Format lines as 'Label: Your instruction content'):", value="This section describes the primary configuration step sequencing.\nWork Ticket Number: Verify work ticket match to traveler documentation.\nPart Number: Confirm physical part matches current revision level.\nSerial Number: Log unique components on tracking log.", height=120)
+# Matrix tracking storage structures
+dynamic_steps_data = {}
 
-# Step Image Tracker Dictionary
-step_images = {}
+# --- DYNAMIC SECTION 5 MANAGEMENT ---
+st.markdown("##### 5. Procedure: VCMM/CMM Inspection")
+steps_5 = []
+for i in range(st.session_state.count_sec5):
+    step_num = i + 1
+    st.markdown(f"**Step {step_num}**")
+    col_txt, col_img = st.columns([2, 1])
+    with col_txt:
+        s_txt = st.text_area(f"Instructions Details for Step {step_num}:", key=f"txt_s5_{step_num}", label_visibility="collapsed", height=65)
+    with col_img:
+        s_img = st.file_uploader(f"Upload Image:", type=["png", "jpg", "jpeg"], key=f"img_s5_{step_num}", label_visibility="collapsed")
+    steps_5.append({"text": s_txt, "image": s_img})
+dynamic_steps_data["5. Procedure: VCMM/CMM Inspection"] = steps_5
 
-# Dynamically generate "Add Image" option controls for Section 5 steps
-vcmm_lines = [b for b in fields["5. Procedure: VCMM/CMM Inspection"].split('\n') if b.strip() and ":" in b and not b.strip().startswith(("http:", "https:"))]
-if vcmm_lines:
-    with st.expander("📸 Attach Images directly to Section 5 Steps"):
-        for idx, line in enumerate(vcmm_lines):
-            step_num = idx + 1
-            step_label = line.split(":", 1)[0].strip()
-            step_images[f"5. Procedure: VCMM/CMM Inspection_step_{step_num}"] = st.file_uploader(
-                f"Image for Step {step_num} ({step_label}):", 
-                type=["png", "jpg", "jpeg"], 
-                key=f"img_vcmm_{step_num}"
-            )
+col_btn5, _ = st.columns([1, 2])
+with col_btn5:
+    if st.button("➕ Add Next Step", key="btn_add_5"):
+        st.session_state.count_sec5 += 1
+        st.rerun()
 
+st.divider()
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
-fields["7. Procedure: Data Reporting"] = st.text_area("7. Procedure: Data Reporting (Format lines as 'Label: Your instruction content'):", value="Follow the database logging structures listed below:\nControls Tab: Enter primary program telemetry fields.\nCustomer: Select explicit customer destination endpoint.\nNotes: Record any baseline calibration adjustments here.", height=150)
+st.divider()
 
-# Dynamically generate "Add Image" option controls for Section 7 steps
-reporting_lines = [b for b in fields["7. Procedure: Data Reporting"].split('\n') if b.strip() and ":" in b and not b.strip().startswith(("http:", "https:"))]
-if reporting_lines:
-    with st.expander("📸 Attach Images directly to Section 7 Steps"):
-        for idx, line in enumerate(reporting_lines):
-            step_num = idx + 1
-            step_label = line.split(":", 1)[0].strip()
-            step_images[f"5. Procedure: VCMM/CMM Inspection_step_{step_num}" if "5. Procedure" in line else f"7. Procedure: Data Reporting_step_{step_num}"] = st.file_uploader(
-                f"Image for Step {step_num} ({step_label}):", 
-                type=["png", "jpg", "jpeg"], 
-                key=f"img_report_{step_num}"
-            )
+# --- DYNAMIC SECTION 7 MANAGEMENT ---
+st.markdown("##### 7. Procedure: Data Reporting")
+steps_7 = []
+for i in range(st.session_state.count_sec7):
+    step_num = i + 1
+    st.markdown(f"**Step {step_num}**")
+    col_txt, col_img = st.columns([2, 1])
+    with col_txt:
+        s_txt = st.text_area(f"Instructions Details for Step {step_num}:", key=f"txt_s7_{step_num}", label_visibility="collapsed", height=65)
+    with col_img:
+        s_img = st.file_uploader(f"Upload Image:", type=["png", "jpg", "jpeg"], key=f"img_s7_{step_num}", label_visibility="collapsed")
+    steps_7.append({"text": s_txt, "image": s_img})
+dynamic_steps_data["7. Procedure: Data Reporting"] = steps_7
+
+col_btn7, _ = st.columns([1, 2])
+with col_btn7:
+    if st.button("➕ Add Next Step", key="btn_add_7"):
+        st.session_state.count_sec7 += 1
+        st.rerun()
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
@@ -399,7 +396,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, step_images)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, dynamic_steps_data)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
