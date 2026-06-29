@@ -220,7 +220,6 @@ def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data
     
     for header, value in fields.items():
         if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
-            # Process dynamic list data instead of string parsing
             steps_list = dynamic_steps_data.get(header, [])
             if not steps_list: continue
             
@@ -303,7 +302,6 @@ st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
-# Initialization of persistent step counts inside state dictionaries
 if "count_sec5" not in st.session_state: st.session_state.count_sec5 = 1
 if "count_sec7" not in st.session_state: st.session_state.count_sec7 = 1
 
@@ -325,7 +323,6 @@ fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
 
-# Matrix tracking storage structures
 dynamic_steps_data = {}
 
 # --- DYNAMIC SECTION 5 MANAGEMENT ---
@@ -342,11 +339,16 @@ for i in range(st.session_state.count_sec5):
     steps_5.append({"text": s_txt, "image": s_img})
 dynamic_steps_data["5. Procedure: VCMM/CMM Inspection"] = steps_5
 
-col_btn5, _ = st.columns([1, 2])
-with col_btn5:
-    if st.button("➕ Add Next Step", key="btn_add_5"):
+col_add5, col_del5, _ = st.columns([1, 1, 1])
+with col_add5:
+    if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
         st.session_state.count_sec5 += 1
         st.rerun()
+with col_del5:
+    if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
+        if st.session_state.count_sec5 > 1:
+            st.session_state.count_sec5 -= 1
+            st.rerun()
 
 st.divider()
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
@@ -366,11 +368,16 @@ for i in range(st.session_state.count_sec7):
     steps_7.append({"text": s_txt, "image": s_img})
 dynamic_steps_data["7. Procedure: Data Reporting"] = steps_7
 
-col_btn7, _ = st.columns([1, 2])
-with col_btn7:
-    if st.button("➕ Add Next Step", key="btn_add_7"):
+col_add7, col_del7, _ = st.columns([1, 1, 1])
+with col_add7:
+    if st.button("➕ Add Next Step", key="btn_add_7", use_container_width=True):
         st.session_state.count_sec7 += 1
         st.rerun()
+with col_del7:
+    if st.button("❌ Delete Last Step", key="btn_del_7", use_container_width=True):
+        if st.session_state.count_sec7 > 1:
+            st.session_state.count_sec7 -= 1
+            st.rerun()
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
