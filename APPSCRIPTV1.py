@@ -17,7 +17,7 @@ def get_base64_image(image_path):
 LOGO_PATH = "AIS Logo.png"
 logo_b64 = get_base64_image(LOGO_PATH)
 
-# --- BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- STRICT PIXEL-LOCKED CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -31,23 +31,29 @@ HTML_TEMPLATE = """
     body {{
         font-family: Helvetica, Arial, sans-serif;
         color: #414042;
-        line-height: 1.5;
+        line-height: 1.4;
         font-size: 10pt;
     }}
     .header-layout {{
         width: 100%;
         margin-bottom: 15px;
+        border-collapse: collapse;
     }}
     .header-layout td {{
         vertical-align: middle;
         border: none;
     }}
+    .logo-cell {{
+        width: 250px;
+    }}
+    .title-cell {{
+        text-align: right;
+    }}
     .pdf-logo {{
-        width: 180px;
+        width: 170px;
         height: auto;
     }}
     .pdf-app-title {{
-        text-align: right;
         color: #E31E24;
         font-size: 16pt;
         font-weight: bold;
@@ -58,7 +64,7 @@ HTML_TEMPLATE = """
         border-collapse: collapse;
     }}
     .meta-table td {{
-        padding: 10px 12px;
+        padding: 8px 10px;
         font-size: 9.5pt;
         background-color: #ffffff;
         border: 1px solid #939598;
@@ -70,10 +76,10 @@ HTML_TEMPLATE = """
         text-transform: uppercase;
         font-size: 8pt;
         letter-spacing: 0.5px;
-        width: 18%;
+        width: 100px;
     }}
     .section-container {{
-        margin-top: 18px;
+        margin-top: 15px;
         margin-bottom: 5px;
     }}
     .section-title {{
@@ -81,10 +87,11 @@ HTML_TEMPLATE = """
         font-size: 11pt;
         font-weight: bold;
         border-bottom: 2px solid #E31E24;
-        padding-bottom: 3px;
+        padding-bottom: 2px;
         margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        -pdf-keep-with-next: true;
     }}
     .content-block {{
         margin-bottom: 10px;
@@ -97,7 +104,7 @@ HTML_TEMPLATE = """
     }}
     table.matrix-table {{
         width: 100%;
-        margin-top: 8px;
+        margin-top: 5px;
         margin-bottom: 12px;
         border-collapse: collapse;
     }}
@@ -106,15 +113,18 @@ HTML_TEMPLATE = """
         color: #ffffff;
         font-weight: bold;
         text-align: left;
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border: 1px solid #414042;
     }}
+    table.matrix-table tr {{
+        page-break-inside: avoid; /* Prevents rows from breaking mid-air */
+    }}
     table.matrix-table td {{
         border: 1px solid #939598;
-        padding: 9px 12px;
+        padding: 8px 10px;
         font-size: 9.5pt;
         vertical-align: top;
         color: #414042;
@@ -125,41 +135,45 @@ HTML_TEMPLATE = """
     .table-key {{
         font-weight: bold;
         color: #E31E24;
-        width: 20%;
+        width: 80px;
     }}
     .step-img-container {{
-        margin-top: 6px;
+        margin-top: 5px;
         text-align: left;
     }}
     .step-img {{
-        width: 220px;
+        width: 200px;
         height: auto;
         border: 1px solid #cbd5e1;
     }}
     .image-grid {{
         width: 100%;
         margin-top: 10px;
+        border-collapse: collapse;
+    }}
+    .image-grid tr {{
+        page-break-inside: avoid;
     }}
     .image-grid td {{
         width: 50%;
-        padding: 6px;
+        padding: 5px;
         text-align: center;
         vertical-align: top;
     }}
     .embedded-img-frame {{
-        width: 260px;
-        height: 165px;
+        width: 250px;
+        height: 155px;
         object-fit: contain;
         background-color: #f8fafc;
         border: 1px solid #cbd5e1;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
         color: #414042;
         font-weight: bold;
         margin-top: 2px;
-        line-height: 1.3;
+        line-height: 1.2;
     }}
     .footer-container {{
         text-align: right;
@@ -172,27 +186,27 @@ HTML_TEMPLATE = """
 <body>
     <table class="header-layout">
         <tr>
-            <td>{html_logo_tag}</td>
-            <td class="pdf-app-title">PQI Work Instruction</td>
+            <td class="logo-cell">{html_logo_tag}</td>
+            <td class="title-cell"><div class="pdf-app-title">PQI Work Instruction</div></td>
         </tr>
     </table>
 
     <table class="meta-table">
         <tr>
             <td class="meta-label">Doc Title</td>
-            <td class="meta-value" style="width: 45%;"><strong>{doc_title}</strong></td>
+            <td style="width: 280px;"><strong>{doc_title}</strong></td>
             <td class="meta-label">Template</td>
-            <td class="meta-value">{template_num}</td>
+            <td>{template_num}</td>
         </tr>
         <tr>
             <td class="meta-label">Date</td>
-            <td class="meta-value" style="width: 45%;"><strong>{doc_date}</strong></td>
+            <td style="width: 280px;"><strong>{doc_date}</strong></td>
             <td class="meta-label">Author</td>
-            <td class="meta-value">{doc_author}</td>
+            <td>{doc_author}</td>
         </tr>
         <tr>
             <td class="meta-label">Purpose</td>
-            <td class="meta-value" colspan="3">{purpose}</td>
+            <td colspan="3">{purpose}</td>
         </tr>
     </table>
     
@@ -215,65 +229,84 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data):
+def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
     html_output = []
     
-    for header, value in fields.items():
-        if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
-            # Process dynamic list data instead of string parsing
-            steps_list = dynamic_steps_data.get(header, [])
-            if not steps_list: continue
-            
-            clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
+    # Process regular string inputs (1, 3, 4)
+    for h_key in ["1. WI Template Number", "3. Responsibilities", "4. Required Tools"]:
+        if h_key in fields and fields[h_key].strip():
+            clean_title = re.sub(r'^\d+\.\s*', '', h_key).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
-            html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
+            html_output.append(f'<div class="content-block">{format_text_block(fields[h_key])}</div></div>')
             
-            for s_idx, step_item in enumerate(steps_list):
-                step_num = s_idx + 1
-                txt_content = step_item["text"].strip()
-                uploaded_file = step_item["image"]
-                
-                step_img_html = ""
-                if uploaded_file is not None:
-                    uploaded_file.seek(0)
-                    s_b64 = base64.b64encode(uploaded_file.read()).decode()
-                    step_img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{uploaded_file.type};base64,{s_b64}"></div>'
-                
-                html_output.append(f'<tr><td class="table-key">Step {step_num}</td><td>{txt_content if txt_content else " "}{step_img_html}</td></tr>')
-                
-            html_output.append('</table></div>')
-            continue
-            
-        val_clean = value.strip()
-        if header == "8. Visuals / Screenshots":
-            if not val_clean and not images_list: continue
-            html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
-            if val_clean: html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
-            
-            if images_list:
-                html_output.append('<table class="image-grid">')
-                for i in range(0, len(images_list), 2):
-                    html_output.append('<tr>')
-                    for j in range(2):
-                        if i + j < len(images_list):
-                            img = images_list[i+j]
-                            img.seek(0)
-                            b64 = base64.b64encode(img.read()).decode()
-                            custom_caption = image_captions.get(img.name, "").strip()
-                            display_caption = f"Figure {i+j+1}: {custom_caption}" if custom_caption else f"Figure {i+j+1}: {img.name}"
-                            html_output.append(f'<td><img class="embedded-img-frame" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">{display_caption}</div></td>')
-                        else:
-                            html_output.append('<td></td>')
-                    html_output.append('</tr>')
-                html_output.append('</table>')
-            html_output.append('</div>')
-            continue
-
-        if not val_clean: continue
-        clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
-        html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
-        html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div></div>')
+    # Process Section 5 Table
+    if steps_5:
+        html_output.append('<div class="section-container"><div class="section-title">Procedure: VCMM/CMM Inspection</div>')
+        html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
+        for idx, step_item in enumerate(steps_5):
+            txt = step_item["text"].strip()
+            img = step_item["image"]
+            img_html = ""
+            if img is not None:
+                img.seek(0) # Pointer safely rewinded
+                b64 = base64.b64encode(img.read()).decode()
+                img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{img.type};base64,{b64}"></div>'
+            cell_text = txt if txt else "&nbsp;"
+            html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
+        html_output.append('</table></div>')
         
+    # Process Section 6 Visual narrative
+    if "6. Procedure: Visual Inspection" in fields and fields["6. Procedure: Visual Inspection"].strip():
+        html_output.append('<div class="section-container"><div class="section-title">Procedure: Visual Inspection</div>')
+        html_output.append(f'<div class="content-block">{format_text_block(fields["6. Procedure: Visual Inspection"])}</div></div>')
+        
+    # Process Section 7 Table
+    if steps_7:
+        html_output.append('<div class="section-container"><div class="section-title">Procedure: Data Reporting</div>')
+        html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
+        for idx, step_item in enumerate(steps_7):
+            txt = step_item["text"].strip()
+            img = step_item["image"]
+            img_html = ""
+            if img is not None:
+                img.seek(0) # Pointer safely rewinded
+                b64 = base64.b64encode(img.read()).decode()
+                img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{img.type};base64,{b64}"></div>'
+            cell_text = txt if txt else "&nbsp;"
+            html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
+        html_output.append('</table></div>')
+        
+    # Process Section 8 Attachments Grid
+    if "8. Visuals / Screenshots" in fields or images_list:
+        val_clean = fields.get("8. Visuals / Screenshots", "").strip()
+        html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
+        if val_clean: 
+            html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
+        if images_list:
+            html_output.append('<table class="image-grid">')
+            for i in range(0, len(images_list), 2):
+                html_output.append('<tr>')
+                for j in range(2):
+                    if i + j < len(images_list):
+                        img = images_list[i+j]
+                        img.seek(0) # Pointer safely rewinded
+                        b64 = base64.b64encode(img.read()).decode()
+                        custom_caption = image_captions.get(img.name, "").strip()
+                        display_caption = f"Figure {i+j+1}: {custom_caption}" if custom_caption else f"Figure {i+j+1}: {img.name}"
+                        html_output.append(f'<td><img class="embedded-img-frame" src="data:{img.type};base64,{b64}"><div class="image-grid-caption">{display_caption}</div></td>')
+                    else:
+                        html_output.append('<td></td>')
+                html_output.append('</tr>')
+            html_output.append('</table>')
+        html_output.append('</div>')
+        
+    # Process Footer Sections (9, 10, 11)
+    for h_key in ["9. Safety / Precautions", "10. Troubleshooting", "11. Compliance"]:
+        if h_key in fields and fields[h_key].strip():
+            clean_title = re.sub(r'^\d+\.\s*', '', h_key).replace(":", "")
+            html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
+            html_output.append(f'<div class="content-block">{format_text_block(fields[h_key])}</div></div>')
+            
     return "".join(html_output)
 
 # --- STREAMLIT UI DESIGN ---
@@ -303,7 +336,6 @@ st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
-# Initialization of persistent step counts inside state dictionaries
 if "count_sec5" not in st.session_state: st.session_state.count_sec5 = 1
 if "count_sec7" not in st.session_state: st.session_state.count_sec7 = 1
 
@@ -325,9 +357,6 @@ fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=
 fields["3. Responsibilities"] = st.text_area("3. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["4. Required Tools"] = st.text_area("4. Required Tools:", height=80)
 
-# Matrix tracking storage structures
-dynamic_steps_data = {}
-
 # --- DYNAMIC SECTION 5 MANAGEMENT ---
 st.markdown("##### 5. Procedure: VCMM/CMM Inspection")
 steps_5 = []
@@ -340,13 +369,17 @@ for i in range(st.session_state.count_sec5):
     with col_img:
         s_img = st.file_uploader(f"Upload Image:", type=["png", "jpg", "jpeg"], key=f"img_s5_{step_num}", label_visibility="collapsed")
     steps_5.append({"text": s_txt, "image": s_img})
-dynamic_steps_data["5. Procedure: VCMM/CMM Inspection"] = steps_5
 
-col_btn5, _ = st.columns([1, 2])
-with col_btn5:
-    if st.button("➕ Add Next Step", key="btn_add_5"):
+col_add5, col_del5, _ = st.columns([1, 1, 1])
+with col_add5:
+    if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
         st.session_state.count_sec5 += 1
         st.rerun()
+with col_del5:
+    if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
+        if st.session_state.count_sec5 > 1:
+            st.session_state.count_sec5 -= 1
+            st.rerun()
 
 st.divider()
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
@@ -364,13 +397,17 @@ for i in range(st.session_state.count_sec7):
     with col_img:
         s_img = st.file_uploader(f"Upload Image:", type=["png", "jpg", "jpeg"], key=f"img_s7_{step_num}", label_visibility="collapsed")
     steps_7.append({"text": s_txt, "image": s_img})
-dynamic_steps_data["7. Procedure: Data Reporting"] = steps_7
 
-col_btn7, _ = st.columns([1, 2])
-with col_btn7:
-    if st.button("➕ Add Next Step", key="btn_add_7"):
+col_add7, col_del7, _ = st.columns([1, 1, 1])
+with col_add7:
+    if st.button("➕ Add Next Step", key="btn_add_7", use_container_width=True):
         st.session_state.count_sec7 += 1
         st.rerun()
+with col_del7:
+    if st.button("❌ Delete Last Step", key="btn_del_7", use_container_width=True):
+        if st.session_state.count_sec7 > 1:
+            st.session_state.count_sec7 -= 1
+            st.rerun()
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
@@ -396,7 +433,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, dynamic_steps_data)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, steps_5, steps_7)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
