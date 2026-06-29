@@ -343,10 +343,12 @@ col_add5, col_del5, _ = st.columns([1, 1, 1])
 with col_add5:
     if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
         st.session_state.count_sec5 += 1
+        st.rerun()
 with col_del5:
     if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
         if st.session_state.count_sec5 > 1:
             st.session_state.count_sec5 -= 1
+            st.rerun()
 
 st.divider()
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
@@ -370,10 +372,12 @@ col_add7, col_del7, _ = st.columns([1, 1, 1])
 with col_add7:
     if st.button("➕ Add Next Step", key="btn_add_7", use_container_width=True):
         st.session_state.count_sec7 += 1
+        st.rerun()
 with col_del7:
     if st.button("❌ Delete Last Step", key="btn_del_7", use_container_width=True):
         if st.session_state.count_sec7 > 1:
             st.session_state.count_sec7 -= 1
+            st.rerun()
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
