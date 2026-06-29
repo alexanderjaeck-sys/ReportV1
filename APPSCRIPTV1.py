@@ -37,20 +37,30 @@ HTML_TEMPLATE = """
     .header-layout {{
         width: 100%;
         margin-bottom: 12px;
+        border-collapse: collapse;
     }}
     .header-layout td {{
         vertical-align: middle;
         border: none;
+        padding: 0px;
+    }}
+    .logo-cell {{
+        width: 40%;
+        text-align: left;
+    }}
+    .title-cell {{
+        width: 60%;
+        text-align: right;
     }}
     .pdf-logo {{
-        width: 180px;
+        width: 170px;
         height: auto;
     }}
     .pdf-app-title {{
-        text-align: right;
         color: #E31E24;
         font-size: 16pt;
         font-weight: bold;
+        margin: 0px;
     }}
     .meta-table {{
         width: 100%;
@@ -182,8 +192,8 @@ HTML_TEMPLATE = """
 <body>
     <table class="header-layout">
         <tr>
-            <td>{html_logo_tag}</td>
-            <td class="pdf-app-title">PQI Work Instruction</td>
+            <td class="logo-cell">{html_logo_tag}</td>
+            <td class="title-cell"><div class="pdf-app-title">PQI Work Instruction</div></td>
         </tr>
     </table>
 
@@ -229,11 +239,8 @@ def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data
     html_output = []
     
     for header, value in fields.items():
-        # FIXED: Check if this is a procedure category first
         if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
             steps_list = dynamic_steps_data.get(header, [])
-            
-            # Check if there is actual data inside the fields or an image attached
             has_active_steps = any(step["text"].strip() or step["image"] is not None for step in steps_list)
             if not has_active_steps: 
                 continue
