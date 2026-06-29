@@ -17,7 +17,7 @@ def get_base64_image(image_path):
 LOGO_PATH = "AIS Logo.png"
 logo_b64 = get_base64_image(LOGO_PATH)
 
-# --- REINFORCED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -31,44 +31,34 @@ HTML_TEMPLATE = """
     body {{
         font-family: Helvetica, Arial, sans-serif;
         color: #414042;
-        line-height: 1.4;
+        line-height: 1.5;
         font-size: 10pt;
     }}
     .header-layout {{
         width: 100%;
-        margin-bottom: 12px;
-        border-collapse: collapse;
+        margin-bottom: 15px;
     }}
     .header-layout td {{
         vertical-align: middle;
         border: none;
-        padding: 0px;
-    }}
-    .logo-cell {{
-        width: 40%;
-        text-align: left;
-    }}
-    .title-cell {{
-        width: 60%;
-        text-align: right;
     }}
     .pdf-logo {{
-        width: 170px;
+        width: 180px;
         height: auto;
     }}
     .pdf-app-title {{
+        text-align: right;
         color: #E31E24;
         font-size: 16pt;
         font-weight: bold;
-        margin: 0px;
     }}
     .meta-table {{
         width: 100%;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         border-collapse: collapse;
     }}
     .meta-table td {{
-        padding: 8px 12px;
+        padding: 10px 12px;
         font-size: 9.5pt;
         background-color: #ffffff;
         border: 1px solid #939598;
@@ -83,34 +73,32 @@ HTML_TEMPLATE = """
         width: 18%;
     }}
     .section-container {{
-        margin-top: 14px;
+        margin-top: 18px;
         margin-bottom: 5px;
-        page-break-inside: auto;
     }}
     .section-title {{
         color: #000000;
         font-size: 11pt;
         font-weight: bold;
         border-bottom: 2px solid #E31E24;
-        padding-bottom: 2px;
-        margin-bottom: 6px;
+        padding-bottom: 3px;
+        margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        -pdf-keep-with-next: true;
     }}
     .content-block {{
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         color: #414042;
         font-size: 10pt;
         padding-left: 2px;
     }}
     .text-line {{
-        margin-bottom: 3px;
+        margin-bottom: 4px;
     }}
     table.matrix-table {{
         width: 100%;
-        margin-top: 5px;
-        margin-bottom: 10px;
+        margin-top: 8px;
+        margin-bottom: 12px;
         border-collapse: collapse;
     }}
     table.matrix-table th {{
@@ -118,18 +106,15 @@ HTML_TEMPLATE = """
         color: #ffffff;
         font-weight: bold;
         text-align: left;
-        padding: 6px 12px;
+        padding: 8px 12px;
         font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border: 1px solid #414042;
     }}
-    table.matrix-table tr {{
-        page-break-inside: avoid;
-    }}
     table.matrix-table td {{
         border: 1px solid #939598;
-        padding: 8px 12px;
+        padding: 9px 12px;
         font-size: 9.5pt;
         vertical-align: top;
         color: #414042;
@@ -143,57 +128,52 @@ HTML_TEMPLATE = """
         width: 20%;
     }}
     .step-img-container {{
-        margin-top: 4px;
+        margin-top: 6px;
         text-align: left;
     }}
     .step-img {{
-        width: 200px;
+        width: 220px;
         height: auto;
         border: 1px solid #cbd5e1;
     }}
     .image-grid {{
         width: 100%;
-        margin-top: 8px;
-        border-collapse: collapse;
-    }}
-    .image-grid tr {{
-        page-break-inside: avoid;
+        margin-top: 10px;
     }}
     .image-grid td {{
         width: 50%;
-        padding: 4px;
+        padding: 6px;
         text-align: center;
         vertical-align: top;
-        border: none;
     }}
     .embedded-img-frame {{
-        width: 250px;
-        height: 155px;
+        width: 260px;
+        height: 165px;
         object-fit: contain;
         background-color: #f8fafc;
         border: 1px solid #cbd5e1;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
         color: #414042;
         font-weight: bold;
         margin-top: 2px;
-        line-height: 1.2;
+        line-height: 1.3;
     }}
     .footer-container {{
         text-align: right;
         font-size: 8pt;
         color: #939598;
-        margin-top: 15px;
+        margin-top: 20px;
     }}
 </style>
 </head>
 <body>
     <table class="header-layout">
         <tr>
-            <td class="logo-cell">{html_logo_tag}</td>
-            <td class="title-cell"><div class="pdf-app-title">PQI Work Instruction</div></td>
+            <td>{html_logo_tag}</td>
+            <td class="pdf-app-title">PQI Work Instruction</td>
         </tr>
     </table>
 
@@ -241,9 +221,7 @@ def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data
     for header, value in fields.items():
         if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
             steps_list = dynamic_steps_data.get(header, [])
-            has_active_steps = any(step["text"].strip() or step["image"] is not None for step in steps_list)
-            if not has_active_steps: 
-                continue
+            if not steps_list: continue
             
             clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
@@ -365,12 +343,10 @@ col_add5, col_del5, _ = st.columns([1, 1, 1])
 with col_add5:
     if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
         st.session_state.count_sec5 += 1
-        st.rerun()
 with col_del5:
     if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
         if st.session_state.count_sec5 > 1:
             st.session_state.count_sec5 -= 1
-            st.rerun()
 
 st.divider()
 fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
@@ -394,12 +370,10 @@ col_add7, col_del7, _ = st.columns([1, 1, 1])
 with col_add7:
     if st.button("➕ Add Next Step", key="btn_add_7", use_container_width=True):
         st.session_state.count_sec7 += 1
-        st.rerun()
 with col_del7:
     if st.button("❌ Delete Last Step", key="btn_del_7", use_container_width=True):
         if st.session_state.count_sec7 > 1:
             st.session_state.count_sec7 -= 1
-            st.rerun()
 
 st.markdown("---")
 st.markdown("##### 🖼️ Section 8: Visuals & Attachments")
