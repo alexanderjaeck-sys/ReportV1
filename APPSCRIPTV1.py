@@ -149,7 +149,7 @@ HTML_TEMPLATE = """
         text-align: left;
     }}
     .step-img {{
-        width: 200px;
+        width: 250px;
         height: auto;
         border: 1px solid #cbd5e1;
     }}
