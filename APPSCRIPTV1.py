@@ -75,7 +75,7 @@ HTML_TEMPLATE = """
     .section-container {{
         margin-top: 14px;
         margin-bottom: 5px;
-        page-break-inside: auto; /* Allows natural breaking across pages */
+        page-break-inside: auto;
     }}
     .section-title {{
         color: #000000;
@@ -86,7 +86,7 @@ HTML_TEMPLATE = """
         margin-bottom: 6px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        -pdf-keep-with-next: true; /* Safeguards heading attachment to text block */
+        -pdf-keep-with-next: true;
     }}
     .content-block {{
         margin-bottom: 8px;
@@ -102,7 +102,6 @@ HTML_TEMPLATE = """
         margin-top: 5px;
         margin-bottom: 10px;
         border-collapse: collapse;
-        -pdf-keep-with-next: false;
     }}
     table.matrix-table th {{
         background-color: #414042;
@@ -116,7 +115,7 @@ HTML_TEMPLATE = """
         border: 1px solid #414042;
     }}
     table.matrix-table tr {{
-        page-break-inside: avoid; /* Essential: Prevents a row/image from shearing in half */
+        page-break-inside: avoid;
     }}
     table.matrix-table td {{
         border: 1px solid #939598;
@@ -230,9 +229,14 @@ def generate_pdf_content(fields, images_list, image_captions, dynamic_steps_data
     html_output = []
     
     for header, value in fields.items():
+        # FIXED: Check if this is a procedure category first
         if header in ["5. Procedure: VCMM/CMM Inspection", "7. Procedure: Data Reporting"]:
             steps_list = dynamic_steps_data.get(header, [])
-            if not steps_list: continue
+            
+            # Check if there is actual data inside the fields or an image attached
+            has_active_steps = any(step["text"].strip() or step["image"] is not None for step in steps_list)
+            if not has_active_steps: 
+                continue
             
             clean_title = re.sub(r'^\d+\.\s*', '', header).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
