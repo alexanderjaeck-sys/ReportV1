@@ -17,7 +17,7 @@ def get_base64_image(image_path):
 LOGO_PATH = "AIS Logo.png"
 logo_b64 = get_base64_image(LOGO_PATH)
 
-# --- BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- REINFORCED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -31,12 +31,12 @@ HTML_TEMPLATE = """
     body {{
         font-family: Helvetica, Arial, sans-serif;
         color: #414042;
-        line-height: 1.5;
+        line-height: 1.4;
         font-size: 10pt;
     }}
     .header-layout {{
         width: 100%;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
     }}
     .header-layout td {{
         vertical-align: middle;
@@ -54,11 +54,11 @@ HTML_TEMPLATE = """
     }}
     .meta-table {{
         width: 100%;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         border-collapse: collapse;
     }}
     .meta-table td {{
-        padding: 10px 12px;
+        padding: 8px 12px;
         font-size: 9.5pt;
         background-color: #ffffff;
         border: 1px solid #939598;
@@ -73,48 +73,54 @@ HTML_TEMPLATE = """
         width: 18%;
     }}
     .section-container {{
-        margin-top: 18px;
+        margin-top: 14px;
         margin-bottom: 5px;
+        page-break-inside: auto; /* Allows natural breaking across pages */
     }}
     .section-title {{
         color: #000000;
         font-size: 11pt;
         font-weight: bold;
         border-bottom: 2px solid #E31E24;
-        padding-bottom: 3px;
-        margin-bottom: 8px;
+        padding-bottom: 2px;
+        margin-bottom: 6px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        -pdf-keep-with-next: true; /* Safeguards heading attachment to text block */
     }}
     .content-block {{
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         color: #414042;
         font-size: 10pt;
         padding-left: 2px;
     }}
     .text-line {{
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }}
     table.matrix-table {{
         width: 100%;
-        margin-top: 8px;
-        margin-bottom: 12px;
+        margin-top: 5px;
+        margin-bottom: 10px;
         border-collapse: collapse;
+        -pdf-keep-with-next: false;
     }}
     table.matrix-table th {{
         background-color: #414042;
         color: #ffffff;
         font-weight: bold;
         text-align: left;
-        padding: 8px 12px;
+        padding: 6px 12px;
         font-size: 9pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border: 1px solid #414042;
     }}
+    table.matrix-table tr {{
+        page-break-inside: avoid; /* Essential: Prevents a row/image from shearing in half */
+    }}
     table.matrix-table td {{
         border: 1px solid #939598;
-        padding: 9px 12px;
+        padding: 8px 12px;
         font-size: 9.5pt;
         vertical-align: top;
         color: #414042;
@@ -128,44 +134,49 @@ HTML_TEMPLATE = """
         width: 20%;
     }}
     .step-img-container {{
-        margin-top: 6px;
+        margin-top: 4px;
         text-align: left;
     }}
     .step-img {{
-        width: 220px;
+        width: 200px;
         height: auto;
         border: 1px solid #cbd5e1;
     }}
     .image-grid {{
         width: 100%;
-        margin-top: 10px;
+        margin-top: 8px;
+        border-collapse: collapse;
+    }}
+    .image-grid tr {{
+        page-break-inside: avoid;
     }}
     .image-grid td {{
         width: 50%;
-        padding: 6px;
+        padding: 4px;
         text-align: center;
         vertical-align: top;
+        border: none;
     }}
     .embedded-img-frame {{
-        width: 260px;
-        height: 165px;
+        width: 250px;
+        height: 155px;
         object-fit: contain;
         background-color: #f8fafc;
         border: 1px solid #cbd5e1;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }}
     .image-grid-caption {{
         font-size: 8.5pt;
         color: #414042;
         font-weight: bold;
         margin-top: 2px;
-        line-height: 1.3;
+        line-height: 1.2;
     }}
     .footer-container {{
         text-align: right;
         font-size: 8pt;
         color: #939598;
-        margin-top: 20px;
+        margin-top: 15px;
     }}
 </style>
 </head>
