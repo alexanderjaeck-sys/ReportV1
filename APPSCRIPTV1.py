@@ -350,12 +350,18 @@ input_purpose = st.text_area("Scope/Purpose:", placeholder="Describe the documen
 
 st.divider()
 
+# UI UNIFORMITY FIX: Explicit Markdown headers mapped to collapsed textareas
 st.markdown("#### 📋 Framework Categories")
 
 fields = {}
-fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-fields["2. Responsibilities"] = st.text_area("2. Responsibilities:", value="a. Users:\nb. Management:", height=80)
-fields["3. Required Tools"] = st.text_area("3. Required Tools:", height=80)
+st.markdown("#### 1. WI Template Number")
+fields["1. WI Template Number"] = st.text_area("1. WI Template Number", height=65, label_visibility="collapsed")
+
+st.markdown("#### 2. Responsibilities")
+fields["2. Responsibilities"] = st.text_area("2. Responsibilities", value="a. Users:\nb. Management:", height=80, label_visibility="collapsed")
+
+st.markdown("#### 3. Required Tools")
+fields["3. Required Tools"] = st.text_area("3. Required Tools", height=80, label_visibility="collapsed")
 
 st.divider()
 
@@ -383,7 +389,10 @@ with col_del4:
             st.rerun()
 
 st.divider()
-fields["5. Procedure: Visual Inspection"] = st.text_area("5. Procedure: Visual Inspection:", height=100)
+
+st.markdown("#### 5. Procedure: Visual Inspection")
+fields["5. Procedure: Visual Inspection"] = st.text_area("5. Procedure: Visual Inspection", height=100, label_visibility="collapsed")
+
 st.divider()
 
 # --- DYNAMIC SECTION 6 MANAGEMENT ---
@@ -412,7 +421,7 @@ with col_del6:
 st.divider()
 
 st.markdown("#### 7. Visuals / Screenshots")
-fields["7. Visuals / Screenshots"] = st.text_area("Narrative for Section 7:", height=70)
+fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 7:", height=70, label_visibility="collapsed")
 uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
 image_captions = {}
@@ -423,9 +432,14 @@ if uploaded_images:
 
 st.divider()
 
-fields["8. Safety / Precautions"] = st.text_area("8. Safety / Precautions:", height=80)
-fields["9. Troubleshooting"] = st.text_area("9. Notes / Troubleshooting:", height=80)
-fields["10. Compliance"] = st.text_area("10. Compliance:", height=80)
+st.markdown("#### 8. Safety / Precautions")
+fields["8. Safety / Precautions"] = st.text_area("8. Safety / Precautions", height=80, label_visibility="collapsed")
+
+st.markdown("#### 9. Notes / Troubleshooting")
+fields["9. Troubleshooting"] = st.text_area("9. Notes / Troubleshooting", height=80, label_visibility="collapsed")
+
+st.markdown("#### 10. Compliance")
+fields["10. Compliance"] = st.text_area("10. Compliance", height=80, label_visibility="collapsed")
 
 st.divider()
 _, col_btn = st.columns([2, 1])
