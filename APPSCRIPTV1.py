@@ -229,21 +229,21 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
+def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
     html_output = []
     
-    # Process regular string inputs (Mapped directly to keys used in layout block below)
+    # Process regular string inputs (1, 2, 3)
     for h_key in ["1. WI Template Number", "2. Responsibilities", "3. Required Tools"]:
         if h_key in fields and fields[h_key].strip():
             clean_title = re.sub(r'^\d+\.\s*', '', h_key).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
             html_output.append(f'<div class="content-block">{format_text_block(fields[h_key])}</div></div>')
             
-    # Process Section 5 Table
-    if steps_5:
+    # Process Section 4 Table
+    if steps_4:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: VCMM/CMM Inspection</div>')
         html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
-        for idx, step_item in enumerate(steps_5):
+        for idx, step_item in enumerate(steps_4):
             txt = step_item["text"].strip()
             img = step_item["image"]
             img_html = ""
@@ -255,16 +255,16 @@ def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
             html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
         html_output.append('</table></div>')
         
-    # Process Section 6 Visual narrative
-    if "6. Procedure: Visual Inspection" in fields and fields["6. Procedure: Visual Inspection"].strip():
+    # Process Section 5 Visual narrative
+    if "5. Procedure: Visual Inspection" in fields and fields["5. Procedure: Visual Inspection"].strip():
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Visual Inspection</div>')
-        html_output.append(f'<div class="content-block">{format_text_block(fields["6. Procedure: Visual Inspection"])}</div></div>')
+        html_output.append(f'<div class="content-block">{format_text_block(fields["5. Procedure: Visual Inspection"])}</div></div>')
         
-    # Process Section 7 Table
-    if steps_7:
+    # Process Section 6 Table
+    if steps_6:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Data Reporting</div>')
         html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
-        for idx, step_item in enumerate(steps_7):
+        for idx, step_item in enumerate(steps_6):
             txt = step_item["text"].strip()
             img = step_item["image"]
             img_html = ""
@@ -276,9 +276,9 @@ def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
             html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
         html_output.append('</table></div>')
         
-    # Process Section 8 Attachments Grid
-    if "8. Visuals / Screenshots" in fields or images_list:
-        val_clean = fields.get("8. Visuals / Screenshots", "").strip()
+    # Process Section 7 Attachments Grid
+    if "7. Visuals / Screenshots" in fields or images_list:
+        val_clean = fields.get("7. Visuals / Screenshots", "").strip()
         html_output.append('<div class="section-container"><div class="section-title">Visuals / Screenshots</div>')
         if val_clean: 
             html_output.append(f'<div class="content-block">{format_text_block(val_clean)}</div>')
@@ -300,8 +300,8 @@ def generate_pdf_content(fields, images_list, image_captions, steps_5, steps_7):
             html_output.append('</table>')
         html_output.append('</div>')
         
-    # Process Footer Sections (9, 10, 11)
-    for h_key in ["9. Safety / Precautions", "10. Troubleshooting", "11. Compliance"]:
+    # Process Footer Sections (8, 9, 10)
+    for h_key in ["8. Safety / Precautions", "9. Troubleshooting", "10. Compliance"]:
         if h_key in fields and fields[h_key].strip():
             clean_title = re.sub(r'^\d+\.\s*', '', h_key).replace(":", "")
             html_output.append(f'<div class="section-container"><div class="section-title">{clean_title}</div>')
@@ -336,8 +336,8 @@ st.title("AIS Work Instruction Generator")
 st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
-if "count_sec5" not in st.session_state: st.session_state.count_sec5 = 1
-if "count_sec7" not in st.session_state: st.session_state.count_sec7 = 1
+if "count_sec4" not in st.session_state: st.session_state.count_sec4 = 1
+if "count_sec6" not in st.session_state: st.session_state.count_sec6 = 1
 
 # Metadata Section
 st.markdown("#### 📓 Document Metadata")
@@ -354,67 +354,65 @@ st.markdown("#### 📋 Framework Categories")
 
 fields = {}
 fields["1. WI Template Number"] = st.text_area("1. WI Template Number:", height=65)
-
-# FIXED UI LABELS: Continuous, clean tracking sequential strings
 fields["2. Responsibilities"] = st.text_area("2. Responsibilities:", value="a. Users:\nb. Management:", height=80)
 fields["3. Required Tools"] = st.text_area("3. Required Tools:", height=80)
 
 st.divider()
 
-# --- DYNAMIC SECTION 5 MANAGEMENT ---
-st.markdown("#### 5. Procedure: VCMM/CMM Inspection")
-steps_5 = []
-for i in range(st.session_state.count_sec5):
+# --- DYNAMIC SECTION 4 MANAGEMENT ---
+st.markdown("#### 4. Procedure: VCMM/CMM Inspection")
+steps_4 = []
+for i in range(st.session_state.count_sec4):
     step_num = i + 1
     col_txt, col_img = st.columns([2, 1])
     with col_txt:
-        s_txt = st.text_area(f"Step {step_num} Instruction Details:", key=f"txt_s5_{step_num}", height=65)
+        s_txt = st.text_area(f"Step {step_num} Instruction Details:", key=f"txt_s4_{step_num}", height=65)
     with col_img:
-        s_img = st.file_uploader(f"Step {step_num} Attachment Image:", type=["png", "jpg", "jpeg"], key=f"img_s5_{step_num}")
-    steps_5.append({"text": s_txt, "image": s_img})
+        s_img = st.file_uploader(f"Step {step_num} Attachment Image:", type=["png", "jpg", "jpeg"], key=f"img_s4_{step_num}")
+    steps_4.append({"text": s_txt, "image": s_img})
 
-col_add5, col_del5, _ = st.columns([1, 1, 1])
-with col_add5:
-    if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
-        st.session_state.count_sec5 += 1
+col_add4, col_del4, _ = st.columns([1, 1, 1])
+with col_add4:
+    if st.button("➕ Add Next Step", key="btn_add_4", use_container_width=True):
+        st.session_state.count_sec4 += 1
         st.rerun()
-with col_del5:
-    if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
-        if st.session_state.count_sec5 > 1:
-            st.session_state.count_sec5 -= 1
+with col_del4:
+    if st.button("❌ Delete Last Step", key="btn_del_4", use_container_width=True):
+        if st.session_state.count_sec4 > 1:
+            st.session_state.count_sec4 -= 1
             st.rerun()
 
 st.divider()
-fields["6. Procedure: Visual Inspection"] = st.text_area("6. Procedure: Visual Inspection:", height=100)
+fields["5. Procedure: Visual Inspection"] = st.text_area("5. Procedure: Visual Inspection:", height=100)
 st.divider()
 
-# --- DYNAMIC SECTION 7 MANAGEMENT ---
-st.markdown("#### 7. Procedure: Data Reporting")
-steps_7 = []
-for i in range(st.session_state.count_sec7):
+# --- DYNAMIC SECTION 6 MANAGEMENT ---
+st.markdown("#### 6. Procedure: Data Reporting")
+steps_6 = []
+for i in range(st.session_state.count_sec6):
     step_num = i + 1
     col_txt, col_img = st.columns([2, 1])
     with col_txt:
-        s_txt = st.text_area(f"Step {step_num} Instruction Details:", key=f"txt_s7_{step_num}", height=65)
+        s_txt = st.text_area(f"Step {step_num} Instruction Details:", key=f"txt_s6_{step_num}", height=65)
     with col_img:
-        s_img = st.file_uploader(f"Step {step_num} Attachment Image:", type=["png", "jpg", "jpeg"], key=f"img_s7_{step_num}")
-    steps_7.append({"text": s_txt, "image": s_img})
+        s_img = st.file_uploader(f"Step {step_num} Attachment Image:", type=["png", "jpg", "jpeg"], key=f"img_s6_{step_num}")
+    steps_6.append({"text": s_txt, "image": s_img})
 
-col_add7, col_del7, _ = st.columns([1, 1, 1])
-with col_add7:
-    if st.button("➕ Add Next Step", key="btn_add_7", use_container_width=True):
-        st.session_state.count_sec7 += 1
+col_add6, col_del6, _ = st.columns([1, 1, 1])
+with col_add6:
+    if st.button("➕ Add Next Step", key="btn_add_6", use_container_width=True):
+        st.session_state.count_sec6 += 1
         st.rerun()
-with col_del7:
-    if st.button("❌ Delete Last Step", key="btn_del_7", use_container_width=True):
-        if st.session_state.count_sec7 > 1:
-            st.session_state.count_sec7 -= 1
+with col_del6:
+    if st.button("❌ Delete Last Step", key="btn_del_6", use_container_width=True):
+        if st.session_state.count_sec6 > 1:
+            st.session_state.count_sec6 -= 1
             st.rerun()
 
 st.divider()
 
-st.markdown("#### 8. Visuals / Screenshots")
-fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 8:", height=70)
+st.markdown("#### 7. Visuals / Screenshots")
+fields["7. Visuals / Screenshots"] = st.text_area("Narrative for Section 7:", height=70)
 uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
 image_captions = {}
@@ -425,9 +423,9 @@ if uploaded_images:
 
 st.divider()
 
-fields["9. Safety / Precautions"] = st.text_area("9. Safety / Precautions:", height=80)
-fields["10. Troubleshooting"] = st.text_area("10. Notes / Troubleshooting:", height=80)
-fields["11. Compliance"] = st.text_area("11. Compliance:", height=80)
+fields["8. Safety / Precautions"] = st.text_area("8. Safety / Precautions:", height=80)
+fields["9. Troubleshooting"] = st.text_area("9. Notes / Troubleshooting:", height=80)
+fields["10. Compliance"] = st.text_area("10. Compliance:", height=80)
 
 st.divider()
 _, col_btn = st.columns([2, 1])
@@ -436,7 +434,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, steps_5, steps_7)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, steps_4, steps_6)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
