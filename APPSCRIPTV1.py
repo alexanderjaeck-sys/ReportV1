@@ -348,6 +348,7 @@ st.text("Advanced Inspection Services | Quality Control Management")
 st.divider()
 
 if "count_sec4" not in st.session_state: st.session_state.count_sec4 = 1
+if "count_sec5" not in st.session_state: st.session_state.count_sec5 = 1
 if "count_sec6" not in st.session_state: st.session_state.count_sec6 = 1
 
 # Metadata Section
