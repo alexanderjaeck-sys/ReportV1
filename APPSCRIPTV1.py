@@ -421,7 +421,7 @@ with col_del6:
 st.divider()
 
 st.markdown("#### 7. Visuals / Screenshots")
-fields["8. Visuals / Screenshots"] = st.text_area("Narrative for Section 7:", height=70, label_visibility="collapsed")
+fields["7. Visuals / Screenshots"] = st.text_area("Narrative for Section 7:", height=70, label_visibility="collapsed")
 uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
 image_captions = {}
