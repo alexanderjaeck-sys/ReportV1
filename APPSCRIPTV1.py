@@ -401,8 +401,28 @@ with col_del4:
 
 st.divider()
 
+# --- DYNAMIC SECTION 5 MANAGEMENT ---
 st.markdown("#### 5. Procedure: Visual Inspection")
-fields["5. Procedure: Visual Inspection"] = st.text_area("5. Procedure: Visual Inspection", height=100, label_visibility="collapsed")
+steps_5 = []
+for i in range(st.session_state.count_sec5):
+    step_num = i + 1
+    col_txt, col_img = st.columns([2, 1])
+    with col_txt:
+        s_txt = st.text_area(f"Step {step_num} Instruction Details:", key=f"txt_s5_{step_num}", height=65)
+    with col_img:
+        s_img = st.file_uploader(f"Step {step_num} Attachment Image:", type=["png", "jpg", "jpeg"], key=f"img_s5_{step_num}")
+    steps_5.append({"text": s_txt, "image": s_img})
+
+col_add5, col_del5, _ = st.columns([1, 1, 1])
+with col_add5:
+    if st.button("➕ Add Next Step", key="btn_add_5", use_container_width=True):
+        st.session_state.count_sec5 += 1
+        st.rerun()
+with col_del5:
+    if st.button("❌ Delete Last Step", key="btn_del_5", use_container_width=True):
+        if st.session_state.count_sec5 > 1:
+            st.session_state.count_sec5 -= 1
+            st.rerun()
 
 st.divider()
 
