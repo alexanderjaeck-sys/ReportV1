@@ -229,7 +229,7 @@ def format_text_block(text_value):
             html_lines.append('<div style="height: 6px;"></div>')
     return "".join(html_lines)
 
-def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
+def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_5, steps_6):
     html_output = []
     
     # Process regular string inputs (1, 2, 3)
@@ -480,7 +480,7 @@ with col_btn:
 
 if compile_button:
     with st.spinner("Compiling AIS Branded Report..."):
-        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, steps_4, steps_5,steps_6)
+        dynamic_content = generate_pdf_content(fields, uploaded_images, image_captions, steps_4, steps_5, steps_6)
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
         
         final_html = HTML_TEMPLATE.format(
