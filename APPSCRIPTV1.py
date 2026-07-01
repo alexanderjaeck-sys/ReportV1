@@ -255,11 +255,22 @@ def generate_pdf_content(fields, images_list, image_captions, steps_4, steps_6):
             html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
         html_output.append('</table></div>')
         
-    # Process Section 5 Visual narrative
-    if "5. Procedure: Visual Inspection" in fields and fields["5. Procedure: Visual Inspection"].strip():
+   # Process Section 5 Table
+    if steps_5:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Visual Inspection</div>')
-        html_output.append(f'<div class="content-block">{format_text_block(fields["5. Procedure: Visual Inspection"])}</div></div>')
-        
+        html_output.append('<table class="matrix-table"><tr><th>Step #</th><th>Details</th></tr>')
+        for idx, step_item in enumerate(steps_5):
+            txt = step_item["text"].strip()
+            img = step_item["image"]
+            img_html = ""
+            if img is not None:
+                img.seek(0)
+                b64 = base64.b64encode(img.read()).decode()
+                img_html = f'<div class="step-img-container"><br/><img class="step-img" src="data:{img.type};base64,{b64}"></div>'
+            cell_text = txt if txt else "&nbsp;"
+            html_output.append(f'<tr><td class="table-key">Step {idx+1}</td><td>{cell_text}{img_html}</td></tr>')
+        html_output.append('</table></div>')
+
     # Process Section 6 Table
     if steps_6:
         html_output.append('<div class="section-container"><div class="section-title">Procedure: Data Reporting</div>')
