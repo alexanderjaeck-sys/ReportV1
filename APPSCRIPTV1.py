@@ -162,7 +162,7 @@ HTML_TEMPLATE = """
     }}
     .embedded-img-frame {{
         width: 250px;
-        height: 155px;
+        height: 250px;
         object-fit: contain;
         background-color: #f8fafc;
         border: 1px solid #cbd5e1;
