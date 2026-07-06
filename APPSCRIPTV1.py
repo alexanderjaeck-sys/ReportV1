@@ -562,7 +562,7 @@ st.markdown("#### 9. Notes / Troubleshooting")
 fields["9. Troubleshooting"] = st.text_area("9. Notes / Troubleshooting", key="field_9", height=80, label_visibility="collapsed")
 
 st.markdown("#### 10. Compliance")
-fields["10. Compliance"] = st.text_area("10. Compliance", key="field_10", height=80, label_visibility="collapsed")
+fields["10. Compliance"] = st.text_area("10. Compliance", key="field_10", height=80, label_visibility="collapsed", on_change=clear_pdf_cache)
 
 st.divider()
 
