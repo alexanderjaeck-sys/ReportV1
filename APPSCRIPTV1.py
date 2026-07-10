@@ -403,9 +403,10 @@ with col_load:
 with col_reset:
     st.write("")
     st.write("")
-    if st.button("🗑️ Start New", use_container_width=True):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+if st.button("🗑️ Start New", use_container_width=True):
+        current_app_key = st.session_state.get("app_key", 0)
+        st.session_state.clear()
+        st.session_state.app_key = current_app_key + 1 # Changes the key to wipe the file uploaders
         st.rerun()
 
 if draft_file is not None:
