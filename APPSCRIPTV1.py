@@ -395,42 +395,10 @@ for _k, _v in _defaults.items():
 # SAVE / LOAD PROGRESS
 # =====================================================================
 st.markdown("#### 💾 Save / Load Progress")
-st.caption("Load a previously saved `.json` draft to restore text fields and images.")
+st.caption("Load a previously saved `.json` draft to restore text fields and images. (To start a new blank document, simply refresh your browser page).")
 
-col_load, col_reset = st.columns([3, 1])
-with col_load:
-    draft_file = st.file_uploader("Load a saved draft (.json):", type=["json"], key="draft_uploader")
-with col_reset:
-    st.write("")
-    st.write("")
-if st.button("🗑️ Start New", use_container_width=True):
-        # 1. Reset all step counters back to 1
-        st.session_state.count_sec2 = 1
-        st.session_state.count_sec3 = 1
-        st.session_state.count_sec4 = 1
-        st.session_state.count_sec5 = 1
-        st.session_state.count_sec7 = 1
-        st.session_state.count_sec8 = 1
-        
-        # 2. Clear stored images and draft memory
-        st.session_state.loaded_images = {}
-        st.session_state.applied_draft_id = None
-        
-        # 3. Explicitly overwrite text and DELETE file uploader memory
-        for key in list(st.session_state.keys()):
-            if key.startswith(("txt_", "cap_", "field_", "input_")):
-                if key == "input_date":
-                    st.session_state[key] = date.today()
-                else:
-                    st.session_state[key] = ""
-            # This is the new part: forcefully delete image/file memory
-            elif key.startswith(("img_", "grid_", "draft_")):
-                del st.session_state[key]
-                    
-        # 4. Increment app_key to destroy file uploaders
-        st.session_state.app_key = st.session_state.get("app_key", 0) + 1
-        
-        st.rerun()
+draft_file = st.file_uploader("Load a saved draft (.json):", type=["json"], key="draft_uploader")
+
 if draft_file is not None:
     _draft_id = getattr(draft_file, "file_id", None) or f"{draft_file.name}_{draft_file.size}"
     if st.session_state.applied_draft_id != _draft_id:
