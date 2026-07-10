@@ -1,0 +1,129 @@
+import os
+import re
+
+SUBSECTIONS = [
+    "Introduction", "Course Prerequisites", "Course Objectives", 
+    "Course Design and Organization", "Course Outline", 
+    "Accessing the Measure-X Help System", "Technical Support", 
+    "Session Objectives", "System Power-Up Procedure", 
+    "System Shutdown Procedure", "Stopping the Machine", "Screen Layout", 
+    "Standard User Interface", "Single Monitor User Interface", "Image Window", 
+    "Illumination Controls", "Toolbox", "Tool & Target Settings Window", 
+    "Hardware User Interface", "Front Panel Controls", "Joystick Controls", 
+    "Manual Alignment Targets", "Changing the Tool & Target Color", 
+    "Focus Tools and Manual Focus Target", "Edge Analysis Tools", 
+    "Weak Edge Settings", "Dark-to-Light Rule for Weak Edge Analysis", 
+    "Tool and Target Practice Exercises", "Exercise 2A", "Exercise 2B", 
+    "Exercise 2C", "Exercise 2D", "Exercise 2E", "About Part Setup", 
+    "When to Perform Part Setup", "Entering Part Setup Instructions", 
+    "Useful Features for Setting Up a Part", "Ways to Set Up a Part", 
+    "Manual Part Setup Using Part Features", "Typical Sequence for a Manual Setup", 
+    "About Datums", "Datum Features", "Typical Sequence for Defining Datums", 
+    "Part Setup and Datum Exercises", "Exercise 3A", "Exercise 3B", 
+    "Exercise 3C", "Exercise 3D", "Challenge Exercise 1", "Challenge Exercise 2", 
+    "Common Measure Functions", "Common Construct Functions", 
+    "Comparing the Construct Distance and Construct Width Functions", 
+    "Distance Examples", "Width Examples", "Distance vs. Width Comparison Example", 
+    "Nominal Values and Tolerances", "Entering Nominal Values and Tolerances", 
+    "Understanding How Tolerances Are Carried Forward", 
+    "How Toleranced Measurements Are Displayed on the Screen", 
+    "How Deviations and Tolerance Ranges are Calculated", 
+    "Outputting Measurement Results", "Understanding Measurement Results Sent to a Printer", 
+    "Viewing Steps in a Routine Listing", "Exercise 4", "Model Window Toolbar", 
+    "Views in the Model Window", "Coordinate System Axes", 
+    "Mouse Functions in the Model Window", "Features in the Model Window", 
+    "Colors of Model Window Attributes", "Exercise 5", "Editing a Routine", 
+    "Deleting the Last Step", "Deleting Step(s)", "Changing a Step", 
+    "Using Edit Step Mode to Change a Step", "Using Enhanced Editor to Change a Step", 
+    "Using Step Edit to Change a Step", "Inserting a Step", "Copying a Step", 
+    "Defining a New Datum (Moving a Datum)", "Example: Defining a New Datum to Create a Bolt Circle", 
+    "Using the Copy Function to Create a Bolt Circle", "Exercise 6A", "Exercise 6B", 
+    "Challenge Exercise 3", "Routine Run Options", "Run Override Options", 
+    "Printer Override Options", "Statistics Output Configuration", 
+    "Templates for Statistics Output", "Exercise 7A", "Exercise 7B", 
+    "Exercise 7C", "Challenge Exercise 4", "Challenge Exercise 5", 
+    "Advanced Weak Edge Settings", "Basic Diagnostics", "Optics Configuration", 
+    "Optics Calibration", "Sound Configuration", "Overlays and Masks of the Video Image", 
+    "Creating an Overlay or Mask of the Video Image", "Save Image Options", 
+    "Saving the Video Image", "Printing the Video Image", "Printing the Model", 
+    "Using the Edge Trace Tool", "Extracting Data", "Using the Centroid Tool", "Search Function"
+]
+
+def clean_line_text(text):
+    """Strips out LaTeX commands to get clean plain text for matching."""
+    text = re.sub(r"\\[a-zA-Z]+\*?\{", "", text) # Remove macros like \section{ or \textbf{
+    text = text.replace("}", "")
+    text = re.sub(r"[^\w\s]", "", text) # Clear punctuation/symbols
+    return text.lower().strip()
+
+def fuzzy_clear_slicer(input_file, output_dir="sections"):
+    if not os.path.exists(input_file):
+        print(f"🚨 Error: Missing '{input_file}' in active workspace.")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+    
+    print(f"📖 Scanning document lines for fuzzy title intersections...")
+    with open(input_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Track structural split markers
+    positions = []
+    current_char_count = 0
+    
+    # Pre-compile full string for character indexing extraction downstream
+    with open(input_file, "r", encoding="utf-8") as f:
+        full_text = f.read()
+
+    for idx, line in enumerate(lines):
+        line_len = len(line)
+        cleaned = clean_line_text(line)
+        
+        # Check if any subsection keyword hits inside the sanitized line string
+        for title in SUBSECTIONS:
+            clean_title = re.sub(r"[^\w\s]", "", title).lower().strip()
+            # Guardrail: Ensure it matches the core phrase, but ignore formatting wrappers
+            if clean_title in cleaned and len(cleaned) < len(clean_title) + 20:
+                positions.append((current_char_count, title))
+                break
+                
+        current_char_count += line_len
+
+    # Sort positions chronologically top-to-bottom
+    positions.sort(key=lambda x: x[0])
+    
+    # Filter out duplicate hits close together on the same line
+    filtered_positions = []
+    last_pos = -1
+    for pos, title in positions:
+        if pos > last_pos + 10:
+            filtered_positions.append((pos, title))
+            last_pos = pos
+
+    if not filtered_positions:
+        print("❌ Fuzzy match failed. The document structure might be entirely flat paragraphs.")
+        return
+
+    print(f"🧩 Mapped {len(filtered_positions)} clean break nodes. Cutting sections...")
+    
+    counts = {}
+    for i, (start_pos, title) in enumerate(filtered_positions):
+        clean_name = re.sub(r"[^\w]", "_", title.lower()).strip("_")
+        clean_name = re.sub(r"__+", "_", clean_name)
+        
+        counts[clean_name] = counts.get(clean_name, 0) + 1
+        suffix = f"_{counts[clean_name]}" if counts[clean_name] > 1 else ""
+        
+        filename = f"{i+1:02d}_{clean_name}{suffix}.tex"
+        filepath = os.path.join(output_dir, filename)
+        
+        end_pos = filtered_positions[i + 1][0] if i + 1 < len(filtered_positions) else len(full_text)
+        chunk = full_text[start_pos:end_pos].strip()
+        
+        with open(filepath, "w", encoding="utf-8") as out_f:
+            out_f.write(chunk)
+            
+    print(f"\n✨ Generation Successful! Your text chunks are waiting inside: '{output_dir}/'")
+
+if __name__ == "__main__":
+    fuzzy_clear_slicer("document_content.tex")
