@@ -416,13 +416,16 @@ if st.button("🗑️ Start New", use_container_width=True):
         st.session_state.loaded_images = {}
         st.session_state.applied_draft_id = None
         
-        # 3. Explicitly overwrite ALL text inputs with empty strings to force the browser to clear
+        # 3. Explicitly overwrite text and DELETE file uploader memory
         for key in list(st.session_state.keys()):
             if key.startswith(("txt_", "cap_", "field_", "input_")):
                 if key == "input_date":
                     st.session_state[key] = date.today()
                 else:
                     st.session_state[key] = ""
+            # This is the new part: forcefully delete image/file memory
+            elif key.startswith(("img_", "grid_", "draft_")):
+                del st.session_state[key]
                     
         # 4. Increment app_key to destroy file uploaders
         st.session_state.app_key = st.session_state.get("app_key", 0) + 1
