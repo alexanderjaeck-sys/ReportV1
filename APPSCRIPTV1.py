@@ -342,7 +342,6 @@ st.set_page_config(page_title="AIS | Work Instruction Generator", layout="center
 
 st.markdown(f"""
     <style>
-        .stApp {{ background-color: #ffffff; }}
         h1 {{ color: #E31E24 !important; font-weight: 800 !important; }}
         h4, h5 {{ color: #414042 !important; font-weight: 700 !important; }}
         .stButton>button {{
