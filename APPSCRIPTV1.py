@@ -7,70 +7,99 @@ from xhtml2pdf import pisa
 from io import BytesIO
 from datetime import date, datetime
 
-# Helper Function to convert local image to a base64 string safely
+# NEW IMPORTS FOR UPGRADES
+from PIL import Image
+from jinja2 import Environment, BaseLoader, select_autoescape
+import io
+
+# ---------------------------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------------------------
 def get_base64_image(image_path):
+    """Fetch local logo asset safely."""
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     return ""
 
+def compress_and_encode_image(uploaded_file, max_width=800, quality=75):
+    """Resizes, compresses, and returns a Base64 string of the image."""
+    try:
+        img = Image.open(uploaded_file)
+        # Convert RGBA to RGB for JPEG saving
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        # Resize proportionally if it exceeds max width
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_size = (max_width, int(img.height * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        # Save to memory buffer as compressed JPEG
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality, optimize=True)
+        return base64.b64encode(buffer.getvalue()).decode()
+    except Exception as e:
+        st.error(f"Error compressing image {uploaded_file.name}: {e}")
+        return None
+
 # Fetch local logo asset
 LOGO_PATH = "AIS Logo.png"
 logo_b64 = get_base64_image(LOGO_PATH)
 
-# --- BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# --- JINJA2 BRANDED PRINT-SPECIFIC CSS/HTML TEMPLATE ---
+# Notice: CSS uses single braces { } again since we switched from .format() to Jinja2
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-    @page {{
+    @page {
         size: letter;
         margin: 0.5in 0.5in 0.6in 0.5in;
-    }}
-    body {{
+    }
+    body {
         font-family: Helvetica, Arial, sans-serif;
         color: #414042;
         line-height: 1.4;
         font-size: 10pt;
-    }}
-    .header-layout {{
+    }
+    .header-layout {
         width: 100%;
         margin-bottom: 15px;
         border-collapse: collapse;
-    }}
-    .header-layout td {{
+    }
+    .header-layout td {
         vertical-align: middle;
         border: none;
-    }}
-    .logo-cell {{
+    }
+    .logo-cell {
         width: 250px;
-    }}
-    .title-cell {{
+    }
+    .title-cell {
         text-align: right;
-    }}
-    .pdf-logo {{
+    }
+    .pdf-logo {
         width: 170px;
         height: auto;
-    }}
-    .pdf-app-title {{
+    }
+    .pdf-app-title {
         color: #E31E24;
         font-size: 16pt;
         font-weight: bold;
-    }}
-    .meta-table {{
+    }
+    .meta-table {
         width: 100%;
         margin-bottom: 20px;
         border-collapse: collapse;
-    }}
-    .meta-table td {{
+    }
+    .meta-table td {
         padding: 8px 10px;
         font-size: 9.5pt;
         background-color: #ffffff;
         border: 1px solid #939598;
-    }}
-    .meta-label {{
+    }
+    .meta-label {
         color: #414042;
         background-color: #f2f2f2;
         font-weight: bold;
@@ -78,12 +107,12 @@ HTML_TEMPLATE = """
         font-size: 8pt;
         letter-spacing: 0.5px;
         width: 100px;
-    }}
-    .section-container {{
+    }
+    .section-container {
         margin-top: 15px;
         margin-bottom: 5px;
-    }}
-    .section-title {{
+    }
+    .section-title {
         color: #000000;
         font-size: 11pt;
         font-weight: bold;
@@ -93,23 +122,23 @@ HTML_TEMPLATE = """
         text-transform: uppercase;
         letter-spacing: 0.5px;
         -pdf-keep-with-next: true;
-    }}
-    .content-block {{
+    }
+    .content-block {
         margin-bottom: 10px;
         color: #414042;
         font-size: 10pt;
         padding-left: 2px;
-    }}
-    .text-line {{
+    }
+    .text-line {
         margin-bottom: 4px;
-    }}
-    table.matrix-table {{
+    }
+    table.matrix-table {
         width: 100%;
         margin-top: 5px;
         margin-bottom: 12px;
         border-collapse: collapse;
-    }}
-    table.matrix-table th {{
+    }
+    table.matrix-table th {
         background-color: #414042;
         color: #ffffff;
         font-weight: bold;
@@ -119,81 +148,81 @@ HTML_TEMPLATE = """
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border: 1px solid #414042;
-    }}
-    table.matrix-table tr {{
+    }
+    table.matrix-table tr {
         page-break-inside: avoid;
-    }}
-    table.matrix-table td {{
+    }
+    table.matrix-table td {
         border: 1px solid #939598;
         padding: 8px 10px;
         font-size: 9.5pt;
         vertical-align: top;
         color: #414042;
-    }}
-    table.matrix-table tr:nth-child(even) td {{
+    }
+    table.matrix-table tr:nth-child(even) td {
         background-color: #f9f9f9;
-    }}
-    .table-key {{
+    }
+    .table-key {
         font-weight: bold;
         color: #E31E24;
         width: 80px;
-    }}
-    .step-img-container {{
+    }
+    .step-img-container {
         margin-top: 5px;
         text-align: left;
-    }}
-    .step-img {{
+    }
+    .step-img {
         width: 200px;
         height: auto;
         border: 1px solid #cbd5e1;
-    }}
-    .step-img-caption {{
+    }
+    .step-img-caption {
         font-size: 8pt;
         color: #414042;
         font-style: italic;
         margin-top: 3px;
-    }}
-    .image-grid {{
+    }
+    .image-grid {
         width: 100%;
         margin-top: 10px;
         border-collapse: collapse;
-    }}
-    .image-grid tr {{
+    }
+    .image-grid tr {
         page-break-inside: avoid;
-    }}
-    .image-grid td {{
+    }
+    .image-grid td {
         width: 50%;
         padding: 5px;
         text-align: center;
         vertical-align: top;
-    }}
-    .embedded-img-frame {{
+    }
+    .embedded-img-frame {
         width: 250px;
         height: 250px;
         object-fit: contain;
         background-color: #f8fafc;
         border: 1px solid #cbd5e1;
         margin-bottom: 4px;
-    }}
-    .image-grid-caption {{
+    }
+    .image-grid-caption {
         font-size: 8.5pt;
         color: #414042;
         font-weight: bold;
         margin-top: 2px;
         line-height: 1.2;
-    }}
-    .footer-container {{
+    }
+    .footer-container {
         text-align: right;
         font-size: 8pt;
         color: #939598;
         margin-top: 20px;
-    }}
+    }
 </style>
 </head>
 <body>
     <table class="header-layout">
         <tr>
-            <td class="logo-cell">{html_logo_tag}</td>
+            <td class="logo-cell">{{ html_logo_tag | safe }}</td>
             <td class="title-cell"><div class="pdf-app-title">PQI Work Instruction</div></td>
         </tr>
     </table>
@@ -201,23 +230,23 @@ HTML_TEMPLATE = """
     <table class="meta-table">
         <tr>
             <td class="meta-label">Doc Title</td>
-            <td style="width: 280px;"><strong>{doc_title}</strong></td>
+            <td style="width: 280px;"><strong>{{ doc_title }}</strong></td>
             <td class="meta-label">Template</td>
-            <td>{template_num}</td>
+            <td>{{ template_num }}</td>
         </tr>
         <tr>
             <td class="meta-label">Date</td>
-            <td style="width: 280px;"><strong>{doc_date}</strong></td>
+            <td style="width: 280px;"><strong>{{ doc_date }}</strong></td>
             <td class="meta-label">Author</td>
-            <td>{doc_author}</td>
+            <td>{{ doc_author }}</td>
         </tr>
         <tr>
             <td class="meta-label">Purpose</td>
-            <td colspan="3">{purpose}</td>
+            <td colspan="3">{{ purpose }}</td>
         </tr>
     </table>
 
-    {dynamic_content}
+    {{ dynamic_content | safe }}
 
     <div class="footer-container">
         AIS Quality Assurance | Page <pdf:pagenumber />
@@ -244,8 +273,9 @@ def format_text_block(text_value):
 def resolve_image(uploaded_file, loaded_entry=None):
     if uploaded_file is not None:
         uploaded_file.seek(0)
-        b64 = base64.b64encode(uploaded_file.read()).decode()
-        return {"b64": b64, "type": uploaded_file.type, "name": uploaded_file.name}
+        b64 = compress_and_encode_image(uploaded_file)
+        if b64:
+            return {"b64": b64, "type": "image/jpeg", "name": uploaded_file.name}
     if loaded_entry:
         return loaded_entry
     return None
@@ -271,7 +301,7 @@ def img_html_block(resolved, caption=""):
 def generate_pdf_content(fields, resolved_images_6, steps_2, steps_3, steps_4, steps_5, steps_7, steps_8):
     html_output = []
 
-    # Section 1: Responsibilities (Split manually)
+    # Section 1: Responsibilities
     users_val = fields.get("field_1_users", "").strip()
     mgmt_val = fields.get("field_1_mgmt", "").strip()
     if users_val or mgmt_val:
@@ -340,20 +370,23 @@ def generate_pdf_content(fields, resolved_images_6, steps_2, steps_3, steps_4, s
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="AIS | Work Instruction Generator", layout="centered")
 
-st.markdown(f"""
+st.markdown("""
     <style>
-        h1 {{ color: #E31E24 !important; font-weight: 800 !important; }}
-        h4, h5 {{ font-weight: 700 !important; }}
-        .stButton>button {{
+        h1 { color: #E31E24 !important; font-weight: 800 !important; }
+        h4, h5 { font-weight: 700 !important; }
+        .stButton>button {
             background-color: #E31E24 !important;
             color: white !important;
             border-radius: 5px !important;
             border: none !important;
             font-weight: bold !important;
-        }}
-        .stButton>button:hover {{ background-color: #414042 !important; color: white !important; }}
-        .stDivider {{ border-bottom-color: #939598 !important; }}
-        div[data-baseweb="textarea"] textarea {{ border: 1px solid #939598 !important; }}
+        }
+        .stButton>button:hover { background-color: #414042 !important; color: white !important; }
+        .stDivider { border-bottom-color: #939598 !important; }
+        div[data-baseweb="textarea"] textarea { border: 1px solid #939598 !important; }
+        .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+        .stTabs [data-baseweb="tab"] { border-radius: 4px 4px 0px 0px; padding: 10px 20px; background-color: #f8fafc;}
+        .stTabs [aria-selected="true"] { background-color: #E31E24 !important; color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -396,7 +429,7 @@ for _k, _v in _defaults.items():
 st.markdown("#### 💾 Save / Load Progress")
 st.caption("Load a previously saved `.json` draft to restore text fields and images. (To start a new blank document, simply refresh your browser page).")
 
-draft_file = st.file_uploader("Load a saved draft (.json):", type=["json"], key="draft_uploader")
+draft_file = st.file_uploader("Load a saved draft (.json):", type=["json"], key="draft_uploader", label_visibility="collapsed")
 
 if draft_file is not None:
     _draft_id = getattr(draft_file, "file_id", None) or f"{draft_file.name}_{draft_file.size}"
@@ -419,36 +452,39 @@ if draft_file is not None:
             st.session_state.count_sec8 = draft_data.get("count_sec8", 1)
             st.session_state.loaded_images = draft_data.get("images", {})
             st.session_state.applied_draft_id = _draft_id
-            st.success("Draft loaded — restoring fields...")
+            
+            # Replaced disruptive st.success with non-intrusive toast notification
+            st.toast("Draft loaded — restoring fields!", icon="✅")
             st.rerun()
         except Exception as e:
             st.error(f"Could not load draft: {e}")
 
 st.divider()
 
-# Metadata Section
-st.markdown("#### 📓 Document Metadata")
-input_doc_title = st.text_input("Document Title:", key="input_doc_title", placeholder="e.g., Sandia-3A1488-01")
-col_l, col_m, col_r = st.columns(3)
-with col_l: input_template_num = st.text_input("Template #:", key="input_template_num", placeholder="e.g., TMP-002")
-with col_m: input_date = st.date_input("Date:", key="input_date")
-with col_r: input_author = st.text_input("Author:", key="input_author", placeholder="Initials/Name")
-input_purpose = st.text_area("Scope/Purpose:", key="input_purpose", placeholder="Describe the document scope...", height=70)
-
-st.divider()
-
-st.markdown("#### 📋 Framework Categories")
+# Organize UI with Tabs
+tab_setup, tab_procedures, tab_wrapup = st.tabs(["1. Setup & Metadata", "2. Procedures", "3. Visuals & Wrap-up"])
 
 fields = {}
 
-# --- SECTION 1: Responsibilities ---
-st.markdown("#### 1. Responsibilities")
-col_user, col_mgmt = st.columns(2)
-with col_user:
-    fields["field_1_users"] = st.text_area("Users:", key="field_1_users", height=80)
-with col_mgmt:
-    fields["field_1_mgmt"] = st.text_area("Management:", key="field_1_mgmt", height=80)
-st.divider()
+# ---------------------------------------------------------------------------
+# TAB 1: SETUP & METADATA
+# ---------------------------------------------------------------------------
+with tab_setup:
+    st.markdown("#### 📓 Document Metadata")
+    input_doc_title = st.text_input("Document Title:", key="input_doc_title", placeholder="e.g., Sandia-3A1488-01")
+    col_l, col_m, col_r = st.columns(3)
+    with col_l: input_template_num = st.text_input("Template #:", key="input_template_num", placeholder="e.g., TMP-002")
+    with col_m: input_date = st.date_input("Date:", key="input_date")
+    with col_r: input_author = st.text_input("Author:", key="input_author", placeholder="Initials/Name")
+    input_purpose = st.text_area("Scope/Purpose:", key="input_purpose", placeholder="Describe the document scope...", height=70)
+
+    st.divider()
+    st.markdown("#### 1. Responsibilities")
+    col_user, col_mgmt = st.columns(2)
+    with col_user:
+        fields["field_1_users"] = st.text_area("Users:", key="field_1_users", height=80)
+    with col_mgmt:
+        fields["field_1_mgmt"] = st.text_area("Management:", key="field_1_mgmt", height=80)
 
 
 def build_dynamic_section(title, prefix, count_key, add_label, del_label, text_label="Details"):
@@ -480,33 +516,38 @@ def build_dynamic_section(title, prefix, count_key, add_label, del_label, text_l
     return steps
 
 
-steps_2 = build_dynamic_section("2. Required Tools", "s2", "count_sec2", "Add Next Tool", "Delete Last Tool", "Tool")
-steps_3 = build_dynamic_section("3. Procedure: VCMM/CMM Inspection", "s3", "count_sec3", "Add Next Step", "Delete Last Step", "Step")
-steps_4 = build_dynamic_section("4. Procedure: Visual Inspection", "s4", "count_sec4", "Add Next Step", "Delete Last Step", "Step")
-steps_5 = build_dynamic_section("5. Procedure: Data Reporting", "s5", "count_sec5", "Add Next Step", "Delete Last Step", "Step")
-
-# --- SECTION 6: Visuals / Screenshots ---
-st.markdown("#### 6. Visuals / Screenshots")
-fields["field_6_narrative"] = st.text_area("Narrative for Section 6:", key="field_6_narrative", height=70, label_visibility="collapsed")
-uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
-
-image_captions = {}
-if uploaded_images:
-    st.markdown("###### 📝 Figure Description Captions")
-    for idx, img in enumerate(uploaded_images):
-        image_captions[img.name] = st.text_input(f"Description for figure ({img.name}):", key=f"cap_grid_{idx}_{img.name}", placeholder="e.g., Highlighted alignment pin verification vector.")
-elif st.session_state.loaded_images.get("section6"):
-    st.caption(f"📎 Using {len(st.session_state.loaded_images['section6'])} saved figure(s) from loaded draft")
-st.divider()
+# ---------------------------------------------------------------------------
+# TAB 2: PROCEDURES
+# ---------------------------------------------------------------------------
+with tab_procedures:
+    steps_2 = build_dynamic_section("2. Required Tools", "s2", "count_sec2", "Add Next Tool", "Delete Last Tool", "Tool")
+    steps_3 = build_dynamic_section("3. Procedure: VCMM/CMM Inspection", "s3", "count_sec3", "Add Next Step", "Delete Last Step", "Step")
+    steps_4 = build_dynamic_section("4. Procedure: Visual Inspection", "s4", "count_sec4", "Add Next Step", "Delete Last Step", "Step")
+    steps_5 = build_dynamic_section("5. Procedure: Data Reporting", "s5", "count_sec5", "Add Next Step", "Delete Last Step", "Step")
 
 
-steps_7 = build_dynamic_section("7. Safety / Precautions", "s7", "count_sec7", "Add Next Item", "Delete Last Item", "Item")
-steps_8 = build_dynamic_section("8. Notes / Troubleshooting", "s8", "count_sec8", "Add Next Item", "Delete Last Item", "Item")
+# ---------------------------------------------------------------------------
+# TAB 3: VISUALS & WRAP-UP
+# ---------------------------------------------------------------------------
+with tab_wrapup:
+    st.markdown("#### 6. Visuals / Screenshots")
+    fields["field_6_narrative"] = st.text_area("Narrative for Section 6:", key="field_6_narrative", height=70, label_visibility="collapsed")
+    uploaded_images = st.file_uploader("Upload Figures (JPG/PNG):", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
-# --- SECTION 9: Compliance ---
-st.markdown("#### 9. Compliance")
-fields["field_9"] = st.text_area("9. Compliance", key="field_9", height=80, label_visibility="collapsed") 
-st.divider()
+    image_captions = {}
+    if uploaded_images:
+        st.markdown("###### 📝 Figure Description Captions")
+        for idx, img in enumerate(uploaded_images):
+            image_captions[img.name] = st.text_input(f"Description for figure ({img.name}):", key=f"cap_grid_{idx}_{img.name}", placeholder="e.g., Highlighted alignment pin verification vector.")
+    elif st.session_state.loaded_images.get("section6"):
+        st.caption(f"📎 Using {len(st.session_state.loaded_images['section6'])} saved figure(s) from loaded draft")
+    st.divider()
+
+    steps_7 = build_dynamic_section("7. Safety / Precautions", "s7", "count_sec7", "Add Next Item", "Delete Last Item", "Item")
+    steps_8 = build_dynamic_section("8. Notes / Troubleshooting", "s8", "count_sec8", "Add Next Item", "Delete Last Item", "Item")
+
+    st.markdown("#### 9. Compliance")
+    fields["field_9"] = st.text_area("9. Compliance", key="field_9", height=80, label_visibility="collapsed") 
 
 
 # --- RESOLVE IMAGES ---
@@ -521,13 +562,15 @@ if uploaded_images:
     resolved_images_6 = []
     for img in uploaded_images:
         img.seek(0)
-        b64 = base64.b64encode(img.read()).decode()
-        resolved_images_6.append({
-            "name": img.name,
-            "type": img.type,
-            "b64": b64,
-            "caption": image_captions.get(img.name, ""),
-        })
+        # Use our PIL compressor for multi-uploads
+        b64 = compress_and_encode_image(img)
+        if b64:
+            resolved_images_6.append({
+                "name": img.name,
+                "type": "image/jpeg",
+                "b64": b64,
+                "caption": image_captions.get(img.name, ""),
+            })
     st.session_state.loaded_images["section6"] = resolved_images_6
 else:
     resolved_images_6 = st.session_state.loaded_images.get("section6", [])
@@ -568,6 +611,7 @@ def build_draft_payload():
         "images": st.session_state.loaded_images,
     }
 
+st.divider()
 
 col_save, col_compile = st.columns(2)
 
@@ -594,7 +638,12 @@ if compile_button:
         )
         logo_tag = f'<img class="pdf-logo" src="data:image/png;base64,{logo_b64}">' if logo_b64 else ''
 
-        final_html = HTML_TEMPLATE.format(
+        # Init Jinja2 Environment (Safe Autoescaping)
+        env = Environment(loader=BaseLoader(), autoescape=select_autoescape(['html', 'xml']))
+        template = env.from_string(HTML_TEMPLATE)
+
+        # Render Final HTML
+        final_html = template.render(
             html_logo_tag=logo_tag,
             doc_title=input_doc_title if input_doc_title.strip() else " ",
             template_num=input_template_num if input_template_num.strip() else " ",
@@ -606,5 +655,9 @@ if compile_button:
 
         pdf_buffer = BytesIO()
         pisa_status = pisa.CreatePDF(final_html, dest=pdf_buffer)
-        st.success("AIS Branded Report Ready!")
-        st.download_button("📥 DOWNLOAD PDF", data=pdf_buffer.getvalue(), file_name="AIS_Work_Instruction.pdf", mime="application/pdf", use_container_width=True)
+        
+        if not pisa_status.err:
+            st.success("AIS Branded Report Ready!")
+            st.download_button("📥 DOWNLOAD PDF", data=pdf_buffer.getvalue(), file_name="AIS_Work_Instruction.pdf", mime="application/pdf", use_container_width=True)
+        else:
+            st.error("There was an error generating the PDF.")
