@@ -259,7 +259,7 @@ st.markdown("""
         .stDivider { border-bottom-color: #939598 !important; }
         div[data-baseweb="textarea"] textarea { border: 1px solid #939598 !important; }
         .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-        .stTabs [data-baseweb="tab"] { border-radius: 4px 4px 0px 0px; padding: 10px 20px; background-color: #f8fafc;}
+        .stTabs [data-baseweb="tab"] { border-radius: 4px 4px 0px 0px; padding: 10px 20px; background-color: #f8fafc; color: #414042 !important; }
         .stTabs [aria-selected="true"] { background-color: #E31E24 !important; color: white !important; }
     </style>
 """, unsafe_allow_html=True)
