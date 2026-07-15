@@ -194,11 +194,18 @@ def generate_pdf_content(fields, resolved_images_6, steps_2, steps_3, steps_4, s
         html_output.append('</div>')
 
     def render_steps(title, steps, item_label="Step"):
-        if not steps:
+        # Filter out steps that are completely blank (no text AND no images)
+        valid_steps = [s for s in steps if s.get("text", "").strip() or s.get("images")]
+        
+        # If there are no valid steps, skip rendering the section entirely
+        if not valid_steps:
             return
+            
         html_output.append(f'<div class="section-container"><div class="section-title">{title}</div>')
         html_output.append(f'<table class="matrix-table"><tr><th>{item_label} #</th><th>Details</th></tr>')
-        for idx, step_item in enumerate(steps):
+        
+        # Loop through the valid_steps instead of the original steps
+        for idx, step_item in enumerate(valid_steps):
             txt = step_item["text"].strip()
             # Feed the entire array of images to the HTML builder
             img_html = imgs_html_block(step_item.get("images", []))
