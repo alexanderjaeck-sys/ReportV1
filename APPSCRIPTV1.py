@@ -82,6 +82,27 @@ HTML_TEMPLATE = """
     .embedded-img-frame { width: 250px; height: 250px; object-fit: contain; background-color: #f8fafc; border: 1px solid #cbd5e1; margin-bottom: 4px; }
     .image-grid-caption { font-size: 8.5pt; color: #414042; font-weight: bold; margin-top: 2px; line-height: 1.2; }
     .footer-container { text-align: right; font-size: 8pt; color: #939598; margin-top: 20px; }
+
+    /* 1. Hide the "Deploy" button and the GitHub icon entirely */
+.stDeployButton, #GithubIcon, [data-testid="stStatusWidget"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 2. Hide specific sibling icons in the main toolbar, leaving ONLY the theme switcher */
+[data-testid="stToolbar"] button:not([title="Switch theme"]),
+[data-testid="stToolbar"] a {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 3. Ensure the toolbar remains visible so the theme switcher stays clickable */
+[data-testid="stToolbar"] {
+    right: 1rem !important;
+    background: transparent !important;
+}
+
+
 </style>
 </head>
 <body>
